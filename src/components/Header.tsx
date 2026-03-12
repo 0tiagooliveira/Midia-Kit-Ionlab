@@ -1,15 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ExternalLink } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 
-const NAV_ITEMS = [
+interface NavItem {
+  name: string;
+  path: string;
+  external?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { name: 'Início', path: '/' },
-  { name: 'Catálogos', path: '/catalogos' },
+  { name: 'Catálogos', path: 'https://catalogos-ionlab.web.app/', external: true },
   { name: 'Vídeos', path: '/videos' },
   { name: 'Manuais', path: '/manuais' },
   { name: 'Fotos', path: '/fotos' },
-  { name: 'Social Media', path: '/artes' },
   { name: 'Contato', path: '/contato' },
 ];
 
@@ -31,18 +36,28 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center space-x-6">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "text-xs uppercase tracking-widest font-bold transition-colors hover:text-ion-blue",
-                location.pathname === item.path ? "text-ion-blue" : "text-gray-400"
-              )}
-            >
-              {item.name}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.external ? (
+              <a
+                key={item.path}
+                href={item.path}
+                className="text-xs uppercase tracking-widest font-bold transition-colors hover:text-ion-blue text-gray-400"
+              >
+                {item.name}
+              </a>
+            ) : (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "text-xs uppercase tracking-widest font-bold transition-colors hover:text-ion-blue",
+                  location.pathname === item.path ? "text-ion-blue" : "text-gray-400"
+                )}
+              >
+                {item.name}
+              </Link>
+            )
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -57,19 +72,30 @@ export default function Header() {
       {/* Mobile Nav */}
       {isOpen && (
         <div className="md:hidden bg-white border-b border-gray-100 py-4 px-4 space-y-4 animate-in slide-in-from-top duration-200">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "block text-base font-medium",
-                location.pathname === item.path ? "text-blue-600" : "text-gray-600"
-              )}
-            >
-              {item.name}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.external ? (
+              <a
+                key={item.path}
+                href={item.path}
+                onClick={() => setIsOpen(false)}
+                className="block text-base font-medium text-gray-600"
+              >
+                {item.name}
+              </a>
+            ) : (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "block text-base font-medium",
+                  location.pathname === item.path ? "text-blue-600" : "text-gray-600"
+                )}
+              >
+                {item.name}
+              </Link>
+            )
+          )}
         </div>
       )}
     </header>

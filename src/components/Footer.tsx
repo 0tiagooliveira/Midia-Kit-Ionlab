@@ -26,7 +26,6 @@ export default function Footer() {
               <li><Link to="/videos" className="hover:text-ion-blue transition-colors">Vídeos</Link></li>
               <li><Link to="/manuais" className="hover:text-ion-blue transition-colors">Manuais</Link></li>
               <li><Link to="/fotos" className="hover:text-ion-blue transition-colors">Fotos</Link></li>
-              <li><Link to="/artes" className="hover:text-ion-blue transition-colors">Social Media</Link></li>
             </ul>
           </div>
           

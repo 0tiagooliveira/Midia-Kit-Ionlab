@@ -71,6 +71,7 @@ export default function PhotoCard({ product }: { product: FotoProduct }) {
           alt={product.name}
           className="w-full h-full object-contain p-3"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Image counter */}

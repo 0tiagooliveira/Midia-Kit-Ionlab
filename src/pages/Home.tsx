@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Play, FileText, Image, Share2, ExternalLink, ArrowRight, BookOpen } from 'lucide-react';
+import { Play, FileText, Image, ExternalLink, ArrowRight, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const SECTIONS = [
@@ -31,13 +31,6 @@ const SECTIONS = [
     path: '/fotos',
     color: 'bg-emerald-500'
   },
-  {
-    title: 'Social Media',
-    description: 'Materiais gráficos prontos para suas redes sociais.',
-    icon: Share2,
-    path: '/artes',
-    color: 'bg-orange-500'
-  }
 ];
 
 export default function Home() {
