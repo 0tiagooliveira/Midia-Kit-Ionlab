@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-ion-blue: #0056b3;
+  --color-ion-dark: #1a1a1a;
+  --color-ion-gray: #f8f9fa;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-ion-dark font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply tracking-tight font-bold;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-6xl mx-auto px-4;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-100;
+  }
+  
+  .btn-primary {
+    @apply bg-ion-blue text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all shadow-sm active:scale-95;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
