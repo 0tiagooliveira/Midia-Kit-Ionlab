@@ -23,6 +23,13 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+where npx >nul 2>&1
+if %errorlevel% neq 0 (
+    echo npx nao encontrado no PATH.
+    pause
+    exit /b 1
+)
+
 if not exist "package.json" (
     echo package.json nao encontrado. Rode este arquivo na raiz do projeto.
     pause
@@ -81,13 +88,15 @@ if %errorlevel% neq 0 (
 echo Build concluido com sucesso!
 echo.
 
-echo 3. Fazendo o deploy (npx firebase deploy)...
+echo 3. Fazendo o deploy do site no Firebase Hosting...
 if not exist "firebase.json" (
-    echo Aviso: firebase.json nao encontrado na raiz.
-    echo Se o deploy Firebase nao estiver configurado neste projeto, este passo pode falhar.
+    echo firebase.json nao encontrado na raiz.
+    echo Configure o Firebase Hosting antes de executar este script.
+    pause
+    exit /b 1
 )
 
-npx firebase deploy
+npx firebase deploy --only hosting
 if %errorlevel% neq 0 (
     echo.
     echo Erro no Deploy! Verifique o console acima.
