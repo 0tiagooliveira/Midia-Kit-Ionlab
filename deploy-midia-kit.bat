@@ -62,10 +62,10 @@ if %errorlevel% equ 0 (
     echo Nenhuma alteracao para commit. Pulando commit.
 ) else (
     git commit -m "Atualizacao do midia kit"
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo Erro ao executar git commit.
         pause
-        exit /b %errorlevel%
+        exit /b 1
     )
 )
 
