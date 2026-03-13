@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -9,16 +9,37 @@ import Contato from './pages/Contato';
 import CatalogosRedirect from './pages/CatalogosRedirect';
 import { useEffect } from 'react';
 import { analytics } from './firebase';
-import { logEvent } from 'firebase/analytics';
+import { logEvent, setUserProperties } from 'firebase/analytics';
+
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Início | Mídia Kit IonLab',
+  '/catalogos': 'Catálogos | Mídia Kit IonLab',
+  '/videos': 'Vídeos | Mídia Kit IonLab',
+  '/manuais': 'Manuais | Mídia Kit IonLab',
+  '/fotos': 'Fotos | Mídia Kit IonLab',
+  '/contato': 'Contato | Mídia Kit IonLab'
+};
 
 function ScrollToTop() {
-  const { pathname } = window.location;
+  const location = useLocation();
+
   useEffect(() => {
+    const pathname = location.pathname;
+    const pageTitle = PAGE_TITLES[pathname] || 'Mídia Kit IonLab';
+
+    document.title = pageTitle;
     window.scrollTo(0, 0);
+
     if (analytics) {
-      logEvent(analytics, 'page_view', { page_path: pathname });
+      logEvent(analytics, 'page_view', {
+        page_path: pathname,
+        page_location: window.location.href,
+        page_title: pageTitle,
+        language: 'pt-br'
+      });
     }
-  }, [pathname]);
+  }, [location.pathname]);
+
   return null;
 }
 
@@ -42,6 +63,17 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => {
+    if (!analytics) {
+      return;
+    }
+
+    setUserProperties(analytics, {
+      site_language: 'pt-br',
+      app_name: 'midia-kit-ionlab'
+    });
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
