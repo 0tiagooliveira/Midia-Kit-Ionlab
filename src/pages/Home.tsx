@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Play, FileText, Image, ExternalLink, ArrowRight, BookOpen } from 'lucide-react';
+import { Play, FileText, Image, ArrowRight, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const SECTIONS = [
@@ -92,7 +92,7 @@ export default function Home() {
               <div className="relative z-10 bg-gradient-to-br from-ion-blue to-blue-700 p-1 rounded-[2rem] shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-700">
                 <div className="bg-white rounded-[1.8rem] overflow-hidden">
                   <img 
-                    src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800" 
+                    src="https://mcusercontent.com/d315c990296355ed94752eef4/images/8d0e0fd2-e87e-6983-c0ed-a670c063a00c.png" 
                     alt="Tecnologia Laboratorial" 
                     className="w-full h-[400px] object-cover opacity-90"
                     referrerPolicy="no-referrer"
@@ -115,7 +115,7 @@ export default function Home() {
             Categorias de Materiais
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {SECTIONS.map((section, idx) => (
             <motion.div
               key={section.path}

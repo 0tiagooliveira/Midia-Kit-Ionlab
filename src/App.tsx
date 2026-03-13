@@ -6,6 +6,7 @@ import Videos from './pages/Videos';
 import Manuais from './pages/Manuais';
 import Fotos from './pages/Fotos';
 import Contato from './pages/Contato';
+import CatalogosRedirect from './pages/CatalogosRedirect';
 import { useEffect } from 'react';
 import { analytics } from './firebase';
 import { logEvent } from 'firebase/analytics';
@@ -28,6 +29,7 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/catalogos" element={<CatalogosRedirect />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/manuais" element={<Manuais />} />
           <Route path="/fotos" element={<Fotos />} />

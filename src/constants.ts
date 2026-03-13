@@ -63,7 +63,7 @@ export const VIDEOS: VideoItem[] = [
     id: 'bs1',
     category: 'Banho Seco',
     title: 'Banho seco digital - BS-150-S-BI',
-    shortsId: 'o3xhvnsT1RI',
+    shortsId: 'BbBZOhG01nM',
     thumbnailUrl: 'https://mcusercontent.com/d315c990296355ed94752eef4/images/92c97bf9-41f0-c067-4dc8-30b7c3551ec0.png',
     downloadUrl: '#'
   },
@@ -99,6 +99,14 @@ export const VIDEOS: VideoItem[] = [
     youtubeId: 'nzDSc9UxeQs',
     shortsId: 'sV2kX1yeQxs',
     downloadUrl: 'https://drive.google.com/drive/folders/16sEzsflEvkag8-xyc8DmiQJFb3K0l0Ex?usp=drive_link'
+  },
+  {
+    id: 'ac1',
+    category: 'Centrífugas',
+    title: 'Régua P/ Contagem Microhematorito CM-12000 Ou DTC-16000 - REGUA-MICROHE',
+    youtubeId: 'PnJuIHg_TVU',
+    shortsId: 'pgDB1af0Hx0',
+    downloadUrl: 'https://drive.google.com/drive/folders/1BurBfR-eJNcOVWEWFrkU2yEss_6iY6Ac?usp=drive_link'
   },
   // Contadores
   {
@@ -249,14 +257,6 @@ export const VIDEOS: VideoItem[] = [
   },
   // Acessórios
   {
-    id: 'ac1',
-    category: 'Acessórios',
-    title: 'Régua P/ Contagem Microhematorito CM-12000 Ou DTC-16000 - REGUA-MICROHE',
-    youtubeId: 'PnJuIHg_TVU',
-    shortsId: 'pgDB1af0Hx0',
-    downloadUrl: 'https://drive.google.com/drive/folders/1BurBfR-eJNcOVWEWFrkU2yEss_6iY6Ac?usp=drive_link'
-  },
-  {
     id: 'ac2',
     category: 'Vidrarias',
     title: 'Câmara de Neubauer - OG-100',
@@ -324,11 +324,3 @@ export const FOTOS: GalleryItem[] = [
   }
 ];
 
-export const ARTES: GalleryItem[] = [
-  {
-    id: '1',
-    title: 'Post Instagram - Agitadores',
-    imageUrl: 'https://picsum.photos/seed/art1/800/800',
-    downloadUrl: '#'
-  }
-];
