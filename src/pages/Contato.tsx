@@ -1,12 +1,16 @@
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
+import { trackEvent } from '../lib/analytics';
 
 export default function Contato() {
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    trackEvent('contact_form_submit', {
+      form_name: 'contato_principal'
+    });
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 5000);
   };
@@ -29,7 +33,18 @@ export default function Contato() {
                 </div>
                 <div>
                   <h4 className="font-bold text-ion-dark uppercase tracking-wider text-sm">E-mail</h4>
-                  <p className="text-gray-600">marketing@ionlab.com.br</p>
+                  <a
+                    href="mailto:marketing@ionlab.com.br"
+                    onClick={() => {
+                      trackEvent('contact_click', {
+                        contact_type: 'email',
+                        contact_value: 'marketing@ionlab.com.br'
+                      });
+                    }}
+                    className="text-gray-600 hover:text-ion-blue transition-colors"
+                  >
+                    marketing@ionlab.com.br
+                  </a>
                 </div>
               </div>
 
@@ -39,7 +54,20 @@ export default function Contato() {
                 </div>
                 <div>
                   <h4 className="font-bold text-ion-dark uppercase tracking-wider text-sm">WhatsApp</h4>
-                  <p className="text-gray-600">(41) 3501-7200</p>
+                  <a
+                    href="https://wa.me/554135017200"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      trackEvent('contact_click', {
+                        contact_type: 'whatsapp',
+                        contact_value: '+554135017200'
+                      });
+                    }}
+                    className="text-gray-600 hover:text-ion-blue transition-colors"
+                  >
+                    (41) 3501-7200
+                  </a>
                 </div>
               </div>
 
@@ -76,6 +104,11 @@ export default function Contato() {
                   <input
                     required
                     type="text"
+                    onFocus={() => {
+                      trackEvent('contact_form_field_focus', {
+                        field_name: 'nome_completo'
+                      });
+                    }}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                     placeholder="Seu nome"
                   />
@@ -85,13 +118,25 @@ export default function Contato() {
                   <input
                     required
                     type="email"
+                    onFocus={() => {
+                      trackEvent('contact_form_field_focus', {
+                        field_name: 'email_corporativo'
+                      });
+                    }}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                     placeholder="exemplo@empresa.com"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Assunto</label>
-                  <select className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                  <select
+                    onFocus={() => {
+                      trackEvent('contact_form_field_focus', {
+                        field_name: 'assunto'
+                      });
+                    }}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                  >
                     <option>Dúvida sobre materiais</option>
                     <option>Solicitação de artes</option>
                     <option>Problemas técnicos</option>
@@ -103,6 +148,11 @@ export default function Contato() {
                   <textarea
                     required
                     rows={4}
+                    onFocus={() => {
+                      trackEvent('contact_form_field_focus', {
+                        field_name: 'mensagem'
+                      });
+                    }}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none resize-none"
                     placeholder="Como podemos ajudar?"
                   ></textarea>

@@ -1,7 +1,13 @@
-import { logEvent } from 'firebase/analytics';
+import { logEvent, setUserProperties } from 'firebase/analytics';
 import { analytics } from '../firebase';
 
 type EventParams = Record<string, string | number | boolean | null | undefined>;
+
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 function withContext(params: EventParams = {}): EventParams {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -13,12 +19,46 @@ function withContext(params: EventParams = {}): EventParams {
   };
 }
 
+function sendGtagEvent(eventName: string, params: EventParams) {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
+    return false;
+  }
+
+  window.gtag('event', eventName, params);
+  return true;
+}
+
 export function trackEvent(eventName: string, params: EventParams = {}) {
+  const payload = withContext(params);
+
+  if (sendGtagEvent(eventName, payload)) {
+    return;
+  }
+
   if (!analytics) {
     return;
   }
 
-  logEvent(analytics, eventName, withContext(params));
+  logEvent(analytics, eventName, payload);
+}
+
+export function trackPageView(pagePath: string, pageTitle: string) {
+  trackEvent('page_view', {
+    page_path: pagePath,
+    page_location: typeof window !== 'undefined' ? window.location.href : '',
+    page_title: pageTitle,
+    language: 'pt-br'
+  });
+}
+
+export function setAnalyticsUserProps(properties: EventParams) {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('set', 'user_properties', properties);
+  }
+
+  if (analytics) {
+    setUserProperties(analytics, properties);
+  }
 }
 
 export function trackNavigationClick(params: {

@@ -8,8 +8,7 @@ import Fotos from './pages/Fotos';
 import Contato from './pages/Contato';
 import CatalogosRedirect from './pages/CatalogosRedirect';
 import { useEffect } from 'react';
-import { analytics } from './firebase';
-import { logEvent, setUserProperties } from 'firebase/analytics';
+import { setAnalyticsUserProps, trackPageView } from './lib/analytics';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Início | Mídia Kit IonLab',
@@ -30,14 +29,7 @@ function ScrollToTop() {
     document.title = pageTitle;
     window.scrollTo(0, 0);
 
-    if (analytics) {
-      logEvent(analytics, 'page_view', {
-        page_path: pathname,
-        page_location: window.location.href,
-        page_title: pageTitle,
-        language: 'pt-br'
-      });
-    }
+    trackPageView(pathname, pageTitle);
   }, [location.pathname]);
 
   return null;
@@ -64,11 +56,7 @@ function AppContent() {
 
 export default function App() {
   useEffect(() => {
-    if (!analytics) {
-      return;
-    }
-
-    setUserProperties(analytics, {
+    setAnalyticsUserProps({
       site_language: 'pt-br',
       app_name: 'midia-kit-ionlab'
     });
