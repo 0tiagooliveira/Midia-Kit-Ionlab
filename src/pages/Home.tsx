@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Play, FileText, Image, ArrowRight, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
+import { trackCatalogClick, trackNavigationClick } from '../lib/analytics';
 
 const SECTIONS = [
   {
@@ -67,7 +68,15 @@ export default function Home() {
               
               <div className="flex flex-wrap gap-4">
                 <button
-                  onClick={() => document.getElementById('materiais')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => {
+                    trackNavigationClick({
+                      source: 'home_hero',
+                      label: 'Explorar Materiais',
+                      destination: '#materiais',
+                      linkType: 'internal'
+                    });
+                    document.getElementById('materiais')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="btn-primary py-4 px-10 flex items-center space-x-3 text-sm shadow-xl shadow-ion-blue/20"
                 >
                   <span>Explorar Materiais</span>
@@ -75,6 +84,13 @@ export default function Home() {
                 </button>
                 <Link
                   to="/catalogos"
+                  onClick={() => {
+                    trackCatalogClick({
+                      source: 'home_hero',
+                      destination: '/catalogos',
+                      mode: 'manual'
+                    });
+                  }}
                   className="inline-flex items-center space-x-2 px-8 py-4 rounded-xl border-2 border-gray-100 text-ion-dark font-bold text-sm hover:bg-gray-50 transition-all"
                 >
                   <BookOpen size={18} className="text-ion-blue" />
@@ -125,6 +141,23 @@ export default function Home() {
             >
               <Link
                 to={section.path}
+                onClick={() => {
+                  if (section.path === '/catalogos') {
+                    trackCatalogClick({
+                      source: 'home_grid',
+                      destination: section.path,
+                      mode: 'manual'
+                    });
+                    return;
+                  }
+
+                  trackNavigationClick({
+                    source: 'home_grid',
+                    label: section.title,
+                    destination: section.path,
+                    linkType: 'internal'
+                  });
+                }}
                 className="group block bg-white p-10 rounded-xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 text-center"
               >
                 <div className={`w-16 h-16 ${section.color} text-white rounded-full flex items-center justify-center mb-8 mx-auto shadow-lg group-hover:scale-110 transition-transform duration-500`}>
@@ -159,6 +192,14 @@ export default function Home() {
             </p>
             <Link
               to="/contato"
+              onClick={() => {
+                trackNavigationClick({
+                  source: 'home_cta',
+                  label: 'Falar com o Marketing',
+                  destination: '/contato',
+                  linkType: 'internal'
+                });
+              }}
               className="inline-flex items-center px-10 py-4 bg-white text-blue-600 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all shadow-xl"
             >
               Falar com o Marketing

@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { trackNavigationClick } from '../lib/analytics';
 
 interface NavItem {
   name: string;
@@ -17,6 +18,17 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function Header() {
   const location = useLocation();
+
+  const handleNavClick = (item: NavItem, source: 'header_desktop' | 'header_mobile') => {
+    const isInternal = item.path.startsWith(window.location.origin);
+
+    trackNavigationClick({
+      source,
+      label: item.name,
+      destination: item.path,
+      linkType: isInternal ? 'internal' : 'external'
+    });
+  };
 
   const isActive = (item: NavItem) => {
     const current = `${window.location.origin}${location.pathname}`.replace(/\/$/, '');
@@ -42,6 +54,7 @@ export default function Header() {
               <a
                 key={item.path}
                 href={item.path}
+                onClick={() => handleNavClick(item, 'header_desktop')}
                 className={cn(
                   'text-xs uppercase tracking-[0.14em] font-bold transition-colors duration-200',
                   isActive(item) ? 'text-[#1767ae]' : 'text-slate-400 hover:text-slate-600'
@@ -59,6 +72,7 @@ export default function Header() {
             <a
               key={item.path}
               href={item.path}
+              onClick={() => handleNavClick(item, 'header_mobile')}
               className={cn(
                 'whitespace-nowrap text-xs font-bold uppercase tracking-[0.12em] transition-colors duration-200',
                 isActive(item) ? 'text-[#1767ae]' : 'text-slate-400'

@@ -2,6 +2,7 @@ import { Download, Play, Smartphone, Monitor } from 'lucide-react';
 import { VideoItem } from '../types';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
+import { trackEvent, trackVideoOpen } from '../lib/analytics';
 
 interface VideoCardProps {
   video: VideoItem;
@@ -16,6 +17,12 @@ export default function VideoCard({ video }: VideoCardProps) {
   const activeId = format === 'horizontal' ? video.youtubeId : video.shortsId;
 
   const handleFormatChange = (newFormat: 'horizontal' | 'vertical') => {
+    trackEvent('video_format_change', {
+      video_title: video.title,
+      video_category: video.category,
+      from_format: format,
+      to_format: newFormat
+    });
     setFormat(newFormat);
     setIsPlaying(false); // Reset playing state when format changes to show new thumbnail
   };
@@ -63,7 +70,17 @@ export default function VideoCard({ video }: VideoCardProps) {
 
       <button 
         className="w-full relative bg-black flex items-center justify-center overflow-hidden cursor-pointer group/video border-none p-0 aspect-video"
-        onClick={() => !isPlaying && setIsPlaying(true)}
+        onClick={() => {
+          if (!isPlaying) {
+            trackVideoOpen({
+              title: video.title,
+              category: video.category,
+              format,
+              videoId: activeId
+            });
+            setIsPlaying(true);
+          }
+        }}
         type="button"
       >
         {activeId ? (
@@ -113,6 +130,13 @@ export default function VideoCard({ video }: VideoCardProps) {
           href={video.downloadUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => {
+            trackEvent('video_material_download_click', {
+              video_title: video.title,
+              video_category: video.category,
+              download_url: video.downloadUrl
+            });
+          }}
           className="inline-flex items-center justify-center space-x-2 px-6 py-2 bg-ion-blue text-white rounded font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md"
         >
           <Download size={14} />

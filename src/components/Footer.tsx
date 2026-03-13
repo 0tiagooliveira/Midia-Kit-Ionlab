@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { trackCatalogClick, trackNavigationClick } from '../lib/analytics';
 
 export default function Footer() {
   return (
@@ -22,10 +23,69 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-ion-dark mb-6 uppercase tracking-widest text-sm">Acesso Rápido</h4>
             <ul className="space-y-3 text-xs uppercase tracking-widest font-bold text-gray-400">
-              <li><Link to="/catalogos" className="hover:text-ion-blue transition-colors">Catálogos</Link></li>
-              <li><Link to="/videos" className="hover:text-ion-blue transition-colors">Vídeos</Link></li>
-              <li><Link to="/manuais" className="hover:text-ion-blue transition-colors">Manuais</Link></li>
-              <li><Link to="/fotos" className="hover:text-ion-blue transition-colors">Fotos</Link></li>
+              <li>
+                <Link
+                  to="/catalogos"
+                  onClick={() => {
+                    trackCatalogClick({
+                      source: 'footer_quick_access',
+                      destination: '/catalogos',
+                      mode: 'manual'
+                    });
+                  }}
+                  className="hover:text-ion-blue transition-colors"
+                >
+                  Catálogos
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/videos"
+                  onClick={() => {
+                    trackNavigationClick({
+                      source: 'footer_quick_access',
+                      label: 'Vídeos',
+                      destination: '/videos',
+                      linkType: 'internal'
+                    });
+                  }}
+                  className="hover:text-ion-blue transition-colors"
+                >
+                  Vídeos
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/manuais"
+                  onClick={() => {
+                    trackNavigationClick({
+                      source: 'footer_quick_access',
+                      label: 'Manuais',
+                      destination: '/manuais',
+                      linkType: 'internal'
+                    });
+                  }}
+                  className="hover:text-ion-blue transition-colors"
+                >
+                  Manuais
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/fotos"
+                  onClick={() => {
+                    trackNavigationClick({
+                      source: 'footer_quick_access',
+                      label: 'Fotos',
+                      destination: '/fotos',
+                      linkType: 'internal'
+                    });
+                  }}
+                  className="hover:text-ion-blue transition-colors"
+                >
+                  Fotos
+                </Link>
+              </li>
             </ul>
           </div>
           

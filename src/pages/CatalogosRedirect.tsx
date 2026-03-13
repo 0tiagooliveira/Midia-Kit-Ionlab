@@ -1,9 +1,15 @@
 import { useEffect } from 'react';
+import { trackCatalogClick } from '../lib/analytics';
 
 const CATALOGOS_URL = 'https://catalogos-ionlab.web.app/';
 
 export default function CatalogosRedirect() {
   useEffect(() => {
+    trackCatalogClick({
+      source: 'catalogos_redirect_page',
+      destination: CATALOGOS_URL,
+      mode: 'automatic'
+    });
     window.location.replace(CATALOGOS_URL);
   }, []);
 
@@ -15,6 +21,13 @@ export default function CatalogosRedirect() {
         </p>
         <a
           href={CATALOGOS_URL}
+          onClick={() => {
+            trackCatalogClick({
+              source: 'catalogos_redirect_fallback',
+              destination: CATALOGOS_URL,
+              mode: 'manual'
+            });
+          }}
           className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
         >
           Se nao abrir automaticamente, clique aqui.
