@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from 'react';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { trackPhotoDownload } from '../lib/analytics';
 
 export interface FotoProduct {
   id: string;
@@ -32,6 +33,13 @@ export default function PhotoCard({ product }: { product: FotoProduct }) {
   async function downloadAllAsZip() {
     setDownloading(true);
     try {
+      trackPhotoDownload({
+        title: product.name,
+        category: product.category,
+        model: product.model,
+        imageCount: images.length
+      });
+
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
       const folderName = product.model || product.name;

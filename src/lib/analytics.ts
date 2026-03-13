@@ -100,3 +100,17 @@ export function trackVideoOpen(params: {
     video_id: params.videoId || ''
   });
 }
+
+export function trackPhotoDownload(params: {
+  title: string;
+  category: string;
+  model?: string;
+  imageCount: number;
+}) {
+  trackEvent('photo_download', {
+    photo_title: params.title,
+    photo_category: params.category,
+    photo_model: params.model || '',
+    image_count: params.imageCount
+  });
+}
