@@ -79,7 +79,7 @@ echo GitHub atualizado com sucesso!
 echo.
 
 echo 2. Construindo o projeto (npm run build)...
-npm run build
+call npm run build
 if %errorlevel% neq 0 (
     echo Erro ao fazer o build. Verifique seu codigo.
     pause
@@ -96,7 +96,7 @@ if not exist "firebase.json" (
     exit /b 1
 )
 
-npx firebase deploy --only hosting
+call npx firebase deploy --only hosting
 if %errorlevel% neq 0 (
     echo.
     echo Erro no Deploy! Verifique o console acima.
