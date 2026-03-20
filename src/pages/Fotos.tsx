@@ -295,7 +295,8 @@ export default function Fotos() {
       }
 
       const ids = Array.from(allIds);
-      const chunkSize = 450;
+      const chunkSize = 500;
+      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
       for (let i = 0; i < ids.length; i += chunkSize) {
         const batch = writeBatch(db);
@@ -308,6 +309,11 @@ export default function Fotos() {
           );
         });
         await batch.commit();
+
+        // Pequeno delay entre batches para não sobrecarregar
+        if (i + chunkSize < ids.length) {
+          await delay(300);
+        }
       }
 
       setImportCancelFlag(false);
@@ -370,50 +376,65 @@ export default function Fotos() {
 
     try {
       const total = importedProducts.length;
+      const batchSize = 500;
+      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      for (let index = 0; index < importedProducts.length; index++) {
+      for (let batchStart = 0; batchStart < importedProducts.length; batchStart += batchSize) {
         // Verificar se foi cancelado
         if (importCancelRef.current) {
           setIsImporting(false);
           setImportCancelFlag(false);
-          alert(`Importacao cancelada em ${index}/${total} produtos.`);
+          alert(`Importacao cancelada em ${batchStart}/${total} produtos.`);
           return;
         }
 
-        const product = importedProducts[index];
-        const modelKey = normalizeForMatch(product.model || '');
-        const nameKey = normalizeForMatch(product.name || '');
-        const matchedId = (modelKey && existingByModel.get(modelKey)) || (nameKey && existingByName.get(nameKey));
-        const fallbackId = slugify(product.model || product.name) || `produto-${index + 1}`;
-        const id = matchedId || fallbackId;
-        
-        await setDoc(
-          doc(db, 'fotos', id),
-          {
-            name: product.name.trim(),
-            brand: product.brand || '',
-            model: product.model || '',
-            category: product.category || 'Outros',
-            discontinued: product.discontinued === true,
-            images: product.images,
-            deleted: false,
-            updatedAt: serverTimestamp()
-          },
-          { merge: true }
-        );
+        const batchEnd = Math.min(batchStart + batchSize, importedProducts.length);
+        const batch = writeBatch(db);
 
-        if (modelKey && !existingByModel.has(modelKey)) {
-          existingByModel.set(modelKey, id);
+        for (let index = batchStart; index < batchEnd; index++) {
+          const product = importedProducts[index];
+          const modelKey = normalizeForMatch(product.model || '');
+          const nameKey = normalizeForMatch(product.name || '');
+          const matchedId = (modelKey && existingByModel.get(modelKey)) || (nameKey && existingByName.get(nameKey));
+          const fallbackId = slugify(product.model || product.name) || `produto-${index + 1}`;
+          const id = matchedId || fallbackId;
+
+          batch.set(
+            doc(db, 'fotos', id),
+            {
+              name: product.name.trim(),
+              brand: product.brand || '',
+              model: product.model || '',
+              category: product.category || 'Outros',
+              discontinued: product.discontinued === true,
+              images: product.images,
+              deleted: false,
+              updatedAt: serverTimestamp()
+            },
+            { merge: true }
+          );
+
+          if (modelKey && !existingByModel.has(modelKey)) {
+            existingByModel.set(modelKey, id);
+          }
+
+          if (nameKey && !existingByName.has(nameKey)) {
+            existingByName.set(nameKey, id);
+          }
         }
 
-        if (nameKey && !existingByName.has(nameKey)) {
-          existingByName.set(nameKey, id);
-        }
+        // Fazer commit do batch
+        await batch.commit();
         
         // Atualizar progresso
-        const percent = Math.round(((index + 1) / total) * 100);
+        const percent = Math.round((batchEnd / total) * 100);
         setImportProgress(percent);
         onProgress?.(percent);
+
+        // Pequeno delay entre batches para não sobrecarregar
+        if (batchEnd < importedProducts.length) {
+          await delay(300);
+        }
       }
       
       // Aguardar um pouco antes de fechar para mostrar 100%
