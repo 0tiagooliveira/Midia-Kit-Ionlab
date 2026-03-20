@@ -86,7 +86,7 @@ function parseProducts(csv: string): FotoProduct[] {
       s => s && s.startsWith('http')
     );
 
-    products.push({ id: `p${i}`, name, images, brand, model, category });
+    products.push({ id: `p${i}`, name, images, brand, model, category, discontinued: false });
   }
 
   return products;
@@ -110,6 +110,7 @@ export default function Fotos() {
     brand: '',
     model: '',
     category: '',
+    discontinued: false,
     images: ''
   });
 
@@ -140,6 +141,7 @@ export default function Fotos() {
         brand: patch.brand || '',
         model: patch.model || '',
         category: patch.category || 'Outros',
+        discontinued: patch.discontinued === true,
         images: Array.isArray(patch.images) ? patch.images.filter(Boolean) : []
       }));
 
@@ -189,6 +191,7 @@ export default function Fotos() {
       brand: product.brand,
       model: product.model,
       category: product.category,
+      discontinued: product.discontinued === true,
       images: product.images.join('\n')
     });
     setModalOpen(true);
@@ -196,7 +199,7 @@ export default function Fotos() {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ id: '', name: '', brand: '', model: '', category: '', images: '' });
+    setForm({ id: '', name: '', brand: '', model: '', category: '', discontinued: false, images: '' });
     setModalOpen(false);
   };
 
@@ -206,7 +209,7 @@ export default function Fotos() {
     }
 
     setEditingId(null);
-    setForm({ id: '', name: '', brand: '', model: '', category: '', images: '' });
+    setForm({ id: '', name: '', brand: '', model: '', category: '', discontinued: false, images: '' });
     setModalOpen(true);
   };
 
@@ -230,6 +233,7 @@ export default function Fotos() {
         brand: form.brand.trim(),
         model: form.model.trim(),
         category: form.category.trim() || 'Outros',
+        discontinued: form.discontinued,
         images,
         deleted: false,
         updatedAt: serverTimestamp()
@@ -374,6 +378,10 @@ export default function Fotos() {
               <input value={form.brand} onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))} placeholder="Marca" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.model} onChange={(e) => setForm((prev) => ({ ...prev, model: e.target.value }))} placeholder="Modelo" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Categoria" className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
+              <label className="md:col-span-2 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-700">
+                <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
+                Marcar como descontinuado(a)
+              </label>
               <textarea
                 value={form.images}
                 onChange={(e) => setForm((prev) => ({ ...prev, images: e.target.value }))}

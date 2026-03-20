@@ -21,6 +21,11 @@ export default function ManualCard({ manual, showAdminMenu = false, onEdit, onDe
         <FileText size={28} />
       </div>
       <h3 className="font-bold text-ion-dark mb-3 uppercase tracking-wider text-sm">{manual.title}</h3>
+      {manual.discontinued ? (
+        <span className="mb-3 inline-block rounded bg-red-50 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-red-700">
+          Descontinuado(a)
+        </span>
+      ) : null}
       <p className="text-xs text-gray-400 mb-8 flex-grow uppercase tracking-widest leading-relaxed">{manual.description}</p>
       <a
         href={manual.downloadUrl}

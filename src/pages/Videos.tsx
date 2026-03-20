@@ -21,6 +21,7 @@ export default function Videos() {
     id: '',
     category: '',
     title: '',
+    discontinued: false,
     youtubeId: '',
     shortsId: '',
     thumbnailUrl: '',
@@ -57,6 +58,7 @@ export default function Videos() {
         id,
         category: item.category || 'Sem categoria',
         title: item.title || 'Sem titulo',
+        discontinued: item.discontinued === true,
         youtubeId: item.youtubeId,
         shortsId: item.shortsId,
         thumbnailUrl: item.thumbnailUrl,
@@ -70,7 +72,7 @@ export default function Videos() {
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ id: '', category: '', title: '', youtubeId: '', shortsId: '', thumbnailUrl: '', downloadUrl: '' });
+    setForm({ id: '', category: '', title: '', discontinued: false, youtubeId: '', shortsId: '', thumbnailUrl: '', downloadUrl: '' });
     setModalOpen(false);
   };
 
@@ -80,7 +82,7 @@ export default function Videos() {
     }
 
     setEditingId(null);
-    setForm({ id: '', category: '', title: '', youtubeId: '', shortsId: '', thumbnailUrl: '', downloadUrl: '' });
+    setForm({ id: '', category: '', title: '', discontinued: false, youtubeId: '', shortsId: '', thumbnailUrl: '', downloadUrl: '' });
     setModalOpen(true);
   };
 
@@ -98,6 +100,7 @@ export default function Videos() {
       {
         category: form.category.trim(),
         title: form.title.trim(),
+        discontinued: form.discontinued,
         youtubeId: form.youtubeId.trim() || null,
         shortsId: form.shortsId.trim() || null,
         thumbnailUrl: form.thumbnailUrl.trim() || null,
@@ -121,6 +124,7 @@ export default function Videos() {
       id: video.id,
       category: video.category,
       title: video.title,
+      discontinued: video.discontinued === true,
       youtubeId: video.youtubeId || '',
       shortsId: video.shortsId || '',
       thumbnailUrl: video.thumbnailUrl || '',
@@ -172,6 +176,10 @@ export default function Videos() {
               )}
               <input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Categoria" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Titulo" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
+              <label className="md:col-span-2 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-700">
+                <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
+                Marcar como descontinuado(a)
+              </label>
               <input value={form.youtubeId} onChange={(e) => setForm((prev) => ({ ...prev, youtubeId: e.target.value }))} placeholder="YouTube ID (horizontal)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.shortsId} onChange={(e) => setForm((prev) => ({ ...prev, shortsId: e.target.value }))} placeholder="Shorts ID (vertical)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.thumbnailUrl} onChange={(e) => setForm((prev) => ({ ...prev, thumbnailUrl: e.target.value }))} placeholder="URL thumbnail (opcional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />

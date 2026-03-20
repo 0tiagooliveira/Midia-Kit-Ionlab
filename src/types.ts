@@ -2,6 +2,7 @@ export interface VideoItem {
   id: string;
   title: string;
   category: string;
+  discontinued?: boolean;
   youtubeId?: string;
   shortsId?: string;
   thumbnailUrl?: string;
@@ -12,6 +13,7 @@ export interface ManualItem {
   id: string;
   title: string;
   description: string;
+  discontinued?: boolean;
   downloadUrl: string;
 }
 

@@ -1,6 +1,6 @@
 import { Download, Play, Smartphone, Monitor } from 'lucide-react';
 import { VideoItem } from '../types';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { trackEvent, trackVideoOpen } from '../lib/analytics';
 import AdminItemMenu from './admin/AdminItemMenu';
@@ -13,12 +13,79 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video, showAdminMenu = false, onEdit, onDelete }: VideoCardProps) {
+  const normalizeYoutubeId = (value?: string) => {
+    if (!value) return '';
+
+    const raw = value.trim();
+    if (!raw) return '';
+
+    if (!raw.includes('http')) {
+      return raw;
+    }
+
+    try {
+      const url = new URL(raw);
+
+      if (url.hostname.includes('youtu.be')) {
+        return url.pathname.replace('/', '').trim();
+      }
+
+      if (url.searchParams.get('v')) {
+        return (url.searchParams.get('v') || '').trim();
+      }
+
+      const parts = url.pathname.split('/').filter(Boolean);
+      const markerIndex = parts.findIndex((part) => part === 'shorts' || part === 'embed' || part === 'watch');
+      if (markerIndex >= 0 && parts[markerIndex + 1]) {
+        return parts[markerIndex + 1].trim();
+      }
+
+      return (parts[parts.length - 1] || '').trim();
+    } catch {
+      return raw;
+    }
+  };
+
+  const horizontalId = normalizeYoutubeId(video.youtubeId);
+  const verticalId = normalizeYoutubeId(video.shortsId);
   const [format, setFormat] = useState<'horizontal' | 'vertical'>(
-    video.youtubeId ? 'horizontal' : 'vertical'
+    horizontalId ? 'horizontal' : 'vertical'
   );
   const [isPlaying, setIsPlaying] = useState(false);
+  const [thumbIndex, setThumbIndex] = useState(0);
 
-  const activeId = format === 'horizontal' ? video.youtubeId : video.shortsId;
+  const activeId = format === 'horizontal' ? horizontalId : verticalId;
+  const fallbackId = format === 'horizontal' ? verticalId : horizontalId;
+
+  const thumbnailCandidates = useMemo(() => {
+    const list: string[] = [];
+
+    if (video.thumbnailUrl) {
+      list.push(video.thumbnailUrl);
+    }
+
+    const pushYoutubeThumbs = (id?: string) => {
+      if (!id) return;
+      list.push(`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`);
+      list.push(`https://img.youtube.com/vi/${id}/hqdefault.jpg`);
+      list.push(`https://i3.ytimg.com/vi/${id}/mqdefault.jpg`);
+      list.push(`https://img.youtube.com/vi/${id}/0.jpg`);
+    };
+
+    pushYoutubeThumbs(activeId);
+    if (fallbackId && fallbackId !== activeId) {
+      pushYoutubeThumbs(fallbackId);
+    }
+
+    // Remove duplicates while keeping order.
+    return Array.from(new Set(list));
+  }, [video.thumbnailUrl, activeId, fallbackId]);
+
+  const thumbSrc = thumbnailCandidates[thumbIndex] || '';
+
+  useEffect(() => {
+    setThumbIndex(0);
+  }, [format, activeId, fallbackId, video.thumbnailUrl]);
 
   const handleFormatChange = (newFormat: 'horizontal' | 'vertical') => {
     trackEvent('video_format_change', {
@@ -29,20 +96,28 @@ export default function VideoCard({ video, showAdminMenu = false, onEdit, onDele
     });
     setFormat(newFormat);
     setIsPlaying(false); // Reset playing state when format changes to show new thumbnail
+    setThumbIndex(0);
   };
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-2xl transition-all duration-300 group flex flex-col">
       <div className="p-3 bg-gray-50 border-b border-gray-100 flex flex-col space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-ion-blue bg-blue-50 px-2 py-1 rounded">
-            {video.category}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-ion-blue bg-blue-50 px-2 py-1 rounded">
+              {video.category}
+            </span>
+            {video.discontinued ? (
+              <span className="text-[10px] uppercase tracking-widest font-bold text-red-700 bg-red-50 px-2 py-1 rounded">
+                Descontinuado(a)
+              </span>
+            ) : null}
+          </div>
           {showAdminMenu && onEdit && onDelete ? <AdminItemMenu onEdit={onEdit} onDelete={onDelete} /> : null}
         </div>
         
         <div className="flex gap-2">
-          {video.youtubeId && (
+          {horizontalId && (
             <button
               onClick={() => handleFormatChange('horizontal')}
               className={cn(
@@ -56,7 +131,7 @@ export default function VideoCard({ video, showAdminMenu = false, onEdit, onDele
               <span>Horizontal</span>
             </button>
           )}
-          {video.shortsId && (
+          {verticalId && (
             <button
               onClick={() => handleFormatChange('vertical')}
               className={cn(
@@ -104,13 +179,19 @@ export default function VideoCard({ video, showAdminMenu = false, onEdit, onDele
             ) : (
               <div className="absolute inset-0 w-full h-full">
                 <img 
-                  src={video.thumbnailUrl || `https://img.youtube.com/vi/${activeId}/hqdefault.jpg`}
+                  src={thumbSrc}
                   alt={video.title}
                   className={cn(
                     "w-full h-full transition-opacity duration-500 opacity-80 group-hover/video:opacity-100",
                     format === 'vertical' ? "object-contain bg-black" : "object-cover"
                   )}
                   referrerPolicy="no-referrer"
+                  onError={() => {
+                    setThumbIndex((prev) => {
+                      const next = prev + 1;
+                      return next < thumbnailCandidates.length ? next : prev;
+                    });
+                  }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-16 h-16 bg-ion-blue/90 text-white rounded-full flex items-center justify-center shadow-2xl group-hover/video:scale-110 transition-transform duration-300">

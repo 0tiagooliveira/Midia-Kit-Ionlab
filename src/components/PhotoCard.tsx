@@ -10,6 +10,7 @@ export interface FotoProduct {
   brand: string;
   model: string;
   category: string;
+  discontinued?: boolean;
 }
 
 interface PhotoCardProps {
@@ -156,6 +157,11 @@ export default function PhotoCard({ product, showAdminMenu = false, onEdit, onDe
       <div className="p-3 flex flex-col gap-1 min-h-[110px]">
         <p className="text-xs text-gray-400 uppercase tracking-wide">{product.brand}</p>
         <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-3">{product.name}</h3>
+        {product.discontinued ? (
+          <span className="inline-block self-start rounded bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-red-700">
+            Descontinuado(a)
+          </span>
+        ) : null}
         {product.model && (
           <span className="inline-block self-start bg-blue-50 text-blue-700 text-xs font-mono px-2 py-0.5 rounded mt-1">
             {product.model}
