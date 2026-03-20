@@ -66,7 +66,6 @@ export default function VideoCard({ video, showAdminMenu = false, onEdit, onDele
 
     const pushYoutubeThumbs = (id?: string) => {
       if (!id) return;
-      list.push(`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`);
       list.push(`https://img.youtube.com/vi/${id}/hqdefault.jpg`);
       list.push(`https://i3.ytimg.com/vi/${id}/mqdefault.jpg`);
       list.push(`https://img.youtube.com/vi/${id}/0.jpg`);
