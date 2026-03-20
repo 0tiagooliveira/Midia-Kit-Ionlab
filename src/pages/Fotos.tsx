@@ -374,14 +374,14 @@ export default function Fotos() {
               {!editingId && (
                 <input value={form.id} onChange={(e) => setForm((prev) => ({ ...prev, id: e.target.value }))} placeholder="ID (opcional para novo)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               )}
+              <label className="md:col-span-2 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-red-700">
+                <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
+                Descontinuado(a)
+              </label>
               <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nome" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.brand} onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))} placeholder="Marca" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.model} onChange={(e) => setForm((prev) => ({ ...prev, model: e.target.value }))} placeholder="Modelo" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
               <input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Categoria" className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
-              <label className="md:col-span-2 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-700">
-                <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
-                Marcar como descontinuado(a)
-              </label>
               <textarea
                 value={form.images}
                 onChange={(e) => setForm((prev) => ({ ...prev, images: e.target.value }))}
