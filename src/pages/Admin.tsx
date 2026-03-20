@@ -1,43 +1,125 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import { FormEvent, useEffect, useState } from 'react';
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  User
+} from 'firebase/auth';
 import { auth } from '../firebase';
-import { ADMIN_EMAILS, isAllowedAdminEmail } from '../lib/admin';
+import { isAllowedAdminUser } from '../lib/admin';
+
+function getAuthErrorMessage(error: unknown) {
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+
+  if (code === 'auth/invalid-credential') {
+    return 'Credenciais invalidas. Verifique se Email/Senha esta habilitado no Firebase Auth ou entre com Google.';
+  }
+
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Login com Google cancelado.';
+  }
+
+  if (code === 'auth/account-exists-with-different-credential') {
+    return 'Esta conta ja existe com outro metodo de login.';
+  }
+
+  if (code === 'auth/unauthorized-domain') {
+    return 'Dominio nao autorizado no Firebase Auth. Adicione localhost em Authorized domains.';
+  }
+
+  return error instanceof Error ? error.message : 'Nao foi possivel fazer login.';
+}
 
 export default function Admin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      setLoading(false);
+
+      if (!user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const allowed = await isAllowedAdminUser(user);
+        setIsAdmin(allowed);
+
+        if (!allowed) {
+          setErrorMessage('Conta sem permissao de administrador. Libere este usuario criando admins/{uid} no Firestore ou adicionando claim admin=true.');
+        }
+      } catch {
+        setIsAdmin(false);
+        setErrorMessage('Nao foi possivel validar as permissoes de administrador.');
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const isAdmin = useMemo(() => isAllowedAdminEmail(currentUser?.email), [currentUser?.email]);
-
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage('');
+    setInfoMessage('');
     setSubmitting(true);
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-
-      if (!isAllowedAdminEmail(normalizedEmail)) {
-        throw new Error('Este e-mail nao tem permissao de administrador.');
-      }
-
       await signInWithEmailAndPassword(auth, normalizedEmail, password);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Nao foi possivel fazer login.';
-      setErrorMessage(message);
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setInfoMessage('');
+    setSubmitting(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreatePassword = async () => {
+    setErrorMessage('');
+    setInfoMessage('');
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setErrorMessage('Digite seu e-mail para receber o link de criacao/redefinicao de senha.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setInfoMessage('Se a conta existir e o provedor Email/Senha estiver habilitado no Firebase Auth, o link sera enviado para este e-mail.');
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -64,15 +146,6 @@ export default function Admin() {
           Entre com uma conta autorizada para administrar os conteudos do Midia Kit.
         </p>
 
-        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-          <p className="font-semibold uppercase tracking-[0.1em] text-slate-700">Contas permitidas</p>
-          <ul className="mt-2 space-y-1">
-            {ADMIN_EMAILS.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-
         {currentUser && isAdmin ? (
           <div className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
             <p className="font-semibold">Voce entrou como administrador.</p>
@@ -83,6 +156,22 @@ export default function Admin() {
               className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700"
             >
               Sair
+            </button>
+          </div>
+        ) : currentUser && !isAdmin ? (
+          <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">Conta autenticada sem permissao de administrador.</p>
+            <p className="mt-1 break-all">E-mail: {currentUser.email || 'nao informado'}</p>
+            <p className="mt-1 break-all">UID: {currentUser.uid}</p>
+            <p className="mt-3 text-xs leading-relaxed">
+              Para liberar acesso: crie no Firestore o documento admins/{currentUser.uid} ou adicione claim admin=true para este usuario.
+            </p>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700"
+            >
+              Trocar conta
             </button>
           </div>
         ) : (
@@ -118,6 +207,7 @@ export default function Admin() {
             </div>
 
             {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+            {infoMessage ? <p className="text-sm text-emerald-700">{infoMessage}</p> : null}
 
             <button
               type="submit"
@@ -125,6 +215,31 @@ export default function Admin() {
               className="inline-flex w-full items-center justify-center rounded-lg bg-[#1767ae] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#12558f] disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {submitting ? 'Entrando...' : 'Entrar como admin'}
+            </button>
+
+            <div className="relative py-1">
+              <div className="h-px w-full bg-slate-200" />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                ou
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={submitting}
+              className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? 'Aguarde...' : 'Entrar com Google'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCreatePassword}
+              disabled={submitting}
+              className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? 'Aguarde...' : 'Criar/Redefinir senha'}
             </button>
           </form>
         )}

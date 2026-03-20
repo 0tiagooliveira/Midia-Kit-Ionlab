@@ -1,12 +1,20 @@
-export const ADMIN_EMAILS = [
-  'marketing.ionlab@gmail.com',
-  'tiago336699@gmail.com'
-] as const;
+import { User } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
-export function isAllowedAdminEmail(email: string | null | undefined) {
-  if (!email) {
+export async function isAllowedAdminUser(user: User | null | undefined) {
+  if (!user) {
     return false;
   }
 
-  return ADMIN_EMAILS.includes(email.trim().toLowerCase() as (typeof ADMIN_EMAILS)[number]);
+  const tokenResult = await user.getIdTokenResult();
+
+  if (tokenResult.claims.admin === true) {
+    return true;
+  }
+
+  const adminDocRef = doc(db, 'admins', user.uid);
+  const adminDoc = await getDoc(adminDocRef);
+
+  return adminDoc.exists();
 }
