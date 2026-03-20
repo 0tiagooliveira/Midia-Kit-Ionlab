@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Search, X, Filter, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import PhotoCard, { FotoProduct } from '../components/PhotoCard';
 import { useAdminSession } from '../hooks/useAdminSession';
 import { db } from '../firebase';
-import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import AdminModal from '../components/admin/AdminModal';
-import { Plus } from 'lucide-react';
+import CSVUploadModal from '../components/admin/CSVUploadModal';
+import ProgressToast from '../components/ProgressToast';
+import { Plus, Upload as UploadIcon } from 'lucide-react';
 
 const PRODUCTS_CACHE_KEY = 'fotos-products-cache-v1';
 const INITIAL_RENDER_LIMIT = 120;
@@ -104,6 +106,12 @@ export default function Fotos() {
   const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_LIMIT);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [csvUploadOpen, setCSVUploadOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importTotal, setImportTotal] = useState(0);
+  const [importCancelFlag, setImportCancelFlag] = useState(false);
+  const importCancelRef = useRef(false);
   const [form, setForm] = useState({
     id: '',
     name: '',
@@ -262,6 +270,166 @@ export default function Fotos() {
     await deleteDoc(doc(db, 'fotos', id));
   };
 
+  const clearAllFotos = async () => {
+    if (!isAdmin) return;
+
+    if (isImporting) {
+      importCancelRef.current = true;
+      setImportCancelFlag(true);
+    }
+
+    const confirmation = window.prompt('Digite LIMPAR para apagar TODAS as fotos (inclusive as do CSV base):');
+    if (confirmation !== 'LIMPAR') {
+      return;
+    }
+
+    try {
+      const allIds = new Set<string>();
+
+      baseProducts.forEach((item) => allIds.add(item.id));
+      Object.keys(overrides).forEach((id) => allIds.add(id));
+
+      if (allIds.size === 0) {
+        alert('Nao ha fotos para limpar.');
+        return;
+      }
+
+      const ids = Array.from(allIds);
+      const chunkSize = 450;
+
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        const chunk = ids.slice(i, i + chunkSize);
+        chunk.forEach((id) => {
+          batch.set(
+            doc(db, 'fotos', id),
+            { deleted: true, updatedAt: serverTimestamp() },
+            { merge: true }
+          );
+        });
+        await batch.commit();
+      }
+
+      setImportCancelFlag(false);
+      importCancelRef.current = false;
+      setIsImporting(false);
+      setImportProgress(0);
+      setImportTotal(0);
+      alert(`✓ ${ids.length} item(ns) ocultado(s). Galeria zerada.`);
+    } catch (err) {
+      console.error('Erro ao limpar fotos:', err);
+      alert('Erro ao limpar as fotos. Tente novamente.');
+    }
+  };
+
+  const handleCSVImport = async (importedProducts: FotoProduct[], onProgress?: (percent: number) => void) => {
+    if (!isAdmin) return;
+
+    // Fechar modal imediatamente
+    setCSVUploadOpen(false);
+
+    // Iniciar importação em background
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportTotal(importedProducts.length);
+    setImportCancelFlag(false);
+    importCancelRef.current = false;
+
+    const normalizeForMatch = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+    const slugify = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80);
+
+    const existingByModel = new Map<string, string>();
+    const existingByName = new Map<string, string>();
+
+    for (const p of products) {
+      const modelKey = normalizeForMatch(p.model || '');
+      const nameKey = normalizeForMatch(p.name || '');
+
+      if (modelKey && !existingByModel.has(modelKey)) {
+        existingByModel.set(modelKey, p.id);
+      }
+
+      if (nameKey && !existingByName.has(nameKey)) {
+        existingByName.set(nameKey, p.id);
+      }
+    }
+
+    try {
+      const total = importedProducts.length;
+
+      for (let index = 0; index < importedProducts.length; index++) {
+        // Verificar se foi cancelado
+        if (importCancelRef.current) {
+          setIsImporting(false);
+          setImportCancelFlag(false);
+          alert(`Importacao cancelada em ${index}/${total} produtos.`);
+          return;
+        }
+
+        const product = importedProducts[index];
+        const modelKey = normalizeForMatch(product.model || '');
+        const nameKey = normalizeForMatch(product.name || '');
+        const matchedId = (modelKey && existingByModel.get(modelKey)) || (nameKey && existingByName.get(nameKey));
+        const fallbackId = slugify(product.model || product.name) || `produto-${index + 1}`;
+        const id = matchedId || fallbackId;
+        
+        await setDoc(
+          doc(db, 'fotos', id),
+          {
+            name: product.name.trim(),
+            brand: product.brand || '',
+            model: product.model || '',
+            category: product.category || 'Outros',
+            discontinued: product.discontinued === true,
+            images: product.images,
+            deleted: false,
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+
+        if (modelKey && !existingByModel.has(modelKey)) {
+          existingByModel.set(modelKey, id);
+        }
+
+        if (nameKey && !existingByName.has(nameKey)) {
+          existingByName.set(nameKey, id);
+        }
+        
+        // Atualizar progresso
+        const percent = Math.round(((index + 1) / total) * 100);
+        setImportProgress(percent);
+        onProgress?.(percent);
+      }
+      
+      // Aguardar um pouco antes de fechar para mostrar 100%
+      setTimeout(() => {
+        setIsImporting(false);
+        setImportCancelFlag(false);
+        alert(`✓ ${importedProducts.length} produto(s) importado(s) com sucesso!`);
+      }, 500);
+    } catch (err) {
+      console.error('Erro ao importar:', err);
+      setIsImporting(false);
+      setImportCancelFlag(false);
+      throw err;
+    }
+  };
+
   const categories = useMemo(() => {
     const seen = new Set<string>();
     const cats: string[] = [];
@@ -359,14 +527,31 @@ export default function Fotos() {
         <section className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-800">Gerenciar Fotos</h2>
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#1767ae] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
-            >
-              <Plus size={14} />
-              Novo item
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCSVUploadOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white hover:bg-emerald-700"
+              >
+                <UploadIcon size={14} />
+                Importar CSV
+              </button>
+              <button
+                type="button"
+                onClick={clearAllFotos}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white hover:bg-rose-700"
+              >
+                Limpar tudo
+              </button>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#1767ae] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
+              >
+                <Plus size={14} />
+                Novo item
+              </button>
+            </div>
           </div>
 
           <AdminModal open={modalOpen} title={editingId ? 'Editar item de fotos' : 'Novo item de fotos'} onClose={resetForm}>
@@ -574,6 +759,22 @@ export default function Fotos() {
           </button>
         </div>
       )}
+
+      <CSVUploadModal 
+        isOpen={csvUploadOpen} 
+        onClose={() => setCSVUploadOpen(false)} 
+        onImport={handleCSVImport}
+      />
+
+      <ProgressToast
+        isVisible={isImporting}
+        progress={importProgress}
+        total={importTotal}
+        onCancel={() => {
+          importCancelRef.current = true;
+          setImportCancelFlag(true);
+        }}
+      />
     </div>
   );
 }
