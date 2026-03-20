@@ -1,13 +1,22 @@
 import { FileText, Download } from 'lucide-react';
 import { ManualItem } from '../types';
+import AdminItemMenu from './admin/AdminItemMenu';
 
 interface ManualCardProps {
   manual: ManualItem;
+  showAdminMenu?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function ManualCard({ manual }: ManualCardProps) {
+export default function ManualCard({ manual, showAdminMenu = false, onEdit, onDelete }: ManualCardProps) {
   return (
-    <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-300 group flex flex-col h-full text-center">
+    <div className="relative bg-white p-8 rounded-xl border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-300 group flex flex-col h-full text-center">
+      {showAdminMenu && onEdit && onDelete ? (
+        <div className="absolute right-3 top-3 z-10">
+          <AdminItemMenu onEdit={onEdit} onDelete={onDelete} />
+        </div>
+      ) : null}
       <div className="w-14 h-14 bg-gray-50 text-ion-blue rounded-full flex items-center justify-center mb-6 mx-auto group-hover:bg-ion-blue group-hover:text-white transition-colors duration-300">
         <FileText size={28} />
       </div>

@@ -2,6 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Search, X, Filter, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import PhotoCard, { FotoProduct } from '../components/PhotoCard';
+import { useAdminSession } from '../hooks/useAdminSession';
+import { db } from '../firebase';
+import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
+import AdminModal from '../components/admin/AdminModal';
+import { Plus } from 'lucide-react';
 
 const PRODUCTS_CACHE_KEY = 'fotos-products-cache-v1';
 const INITIAL_RENDER_LIMIT = 120;
@@ -88,13 +93,58 @@ function parseProducts(csv: string): FotoProduct[] {
 }
 
 export default function Fotos() {
-  const [products, setProducts] = useState<FotoProduct[]>(() => readCachedProducts());
-  const [loading, setLoading] = useState(products.length === 0);
+  const { isAdmin } = useAdminSession();
+  const [baseProducts, setBaseProducts] = useState<FotoProduct[]>(() => readCachedProducts());
+  const [overrides, setOverrides] = useState<Record<string, Partial<FotoProduct> & { deleted?: boolean }>>({});
+  const [loading, setLoading] = useState(baseProducts.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showCategories, setShowCategories] = useState(false);
   const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_LIMIT);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState({
+    id: '',
+    name: '',
+    brand: '',
+    model: '',
+    category: '',
+    images: ''
+  });
+
+  const products = useMemo(() => {
+    const baseIds = new Set(baseProducts.map((item) => item.id));
+
+    const mergedBase = baseProducts.flatMap((item) => {
+      const patch = overrides[item.id];
+      if (patch?.deleted) {
+        return [];
+      }
+
+      return [
+        {
+          ...item,
+          ...patch,
+          id: item.id,
+          images: Array.isArray(patch?.images) ? patch.images.filter(Boolean) : item.images
+        }
+      ];
+    });
+
+    const custom = (Object.entries(overrides) as Array<[string, Partial<FotoProduct> & { deleted?: boolean }]>)
+      .filter(([id, patch]) => !baseIds.has(id) && !patch.deleted)
+      .map(([id, patch]) => ({
+        id,
+        name: patch.name || 'Sem nome',
+        brand: patch.brand || '',
+        model: patch.model || '',
+        category: patch.category || 'Outros',
+        images: Array.isArray(patch.images) ? patch.images.filter(Boolean) : []
+      }));
+
+    return [...mergedBase, ...custom];
+  }, [baseProducts, overrides]);
 
   useEffect(() => {
     fetch('/Fotos.csv')
@@ -103,17 +153,110 @@ export default function Fotos() {
         const decoder = new TextDecoder('windows-1252');
         const text = decoder.decode(buffer);
         const parsedProducts = parseProducts(text);
-        setProducts(parsedProducts);
+        setBaseProducts(parsedProducts);
         writeCachedProducts(parsedProducts);
       })
       .catch(err => {
         console.error(err);
-        if (products.length === 0) {
+        if (baseProducts.length === 0) {
           setError('Erro ao carregar dados.');
         }
       })
       .finally(() => setLoading(false));
-  }, [products.length]);
+  }, [baseProducts.length]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'fotos'), (snapshot) => {
+      const next: Record<string, Partial<FotoProduct> & { deleted?: boolean }> = {};
+      snapshot.forEach((item) => {
+        next[item.id] = item.data() as Partial<FotoProduct> & { deleted?: boolean };
+      });
+      setOverrides(next);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const startEdit = (product: FotoProduct) => {
+    if (!isAdmin) {
+      return;
+    }
+
+    setEditingId(product.id);
+    setForm({
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      model: product.model,
+      category: product.category,
+      images: product.images.join('\n')
+    });
+    setModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setForm({ id: '', name: '', brand: '', model: '', category: '', images: '' });
+    setModalOpen(false);
+  };
+
+  const openCreateModal = () => {
+    if (!isAdmin) {
+      return;
+    }
+
+    setEditingId(null);
+    setForm({ id: '', name: '', brand: '', model: '', category: '', images: '' });
+    setModalOpen(true);
+  };
+
+  const saveProduct = async () => {
+    if (!isAdmin) {
+      return;
+    }
+
+    const id = (editingId || form.id || crypto.randomUUID().slice(0, 8)).trim();
+    if (!id) return;
+
+    const images = form.images
+      .split(/\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    await setDoc(
+      doc(db, 'fotos', id),
+      {
+        name: form.name.trim(),
+        brand: form.brand.trim(),
+        model: form.model.trim(),
+        category: form.category.trim() || 'Outros',
+        images,
+        deleted: false,
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    resetForm();
+  };
+
+  const removeProduct = async (id: string) => {
+    if (!isAdmin) {
+      return;
+    }
+
+    if (!window.confirm('Deseja excluir este item de fotos?')) {
+      return;
+    }
+
+    const isBaseItem = baseProducts.some((item) => item.id === id);
+    if (isBaseItem) {
+      await setDoc(doc(db, 'fotos', id), { deleted: true, updatedAt: serverTimestamp() }, { merge: true });
+      return;
+    }
+
+    await deleteDoc(doc(db, 'fotos', id));
+  };
 
   const categories = useMemo(() => {
     const seen = new Set<string>();
@@ -161,7 +304,7 @@ export default function Fotos() {
   const displayedGroups = useMemo(() => {
     let remaining = renderLimit;
     const result: Array<[string, FotoProduct[]]> = [];
-    for (const [category, items] of Object.entries(grouped)) {
+    for (const [category, items] of Object.entries(grouped) as Array<[string, FotoProduct[]]>) {
       if (remaining <= 0) break;
       const slice = items.slice(0, remaining);
       if (slice.length > 0) {
@@ -208,6 +351,46 @@ export default function Fotos() {
 
   return (
     <div className="container mx-auto px-4 py-10">
+      {isAdmin && (
+        <section className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-800">Gerenciar Fotos</h2>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#1767ae] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
+            >
+              <Plus size={14} />
+              Novo item
+            </button>
+          </div>
+
+          <AdminModal open={modalOpen} title={editingId ? 'Editar item de fotos' : 'Novo item de fotos'} onClose={resetForm}>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {!editingId && (
+                <input value={form.id} onChange={(e) => setForm((prev) => ({ ...prev, id: e.target.value }))} placeholder="ID (opcional para novo)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              )}
+              <input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Nome" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <input value={form.brand} onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))} placeholder="Marca" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <input value={form.model} onChange={(e) => setForm((prev) => ({ ...prev, model: e.target.value }))} placeholder="Modelo" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Categoria" className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
+              <textarea
+                value={form.images}
+                onChange={(e) => setForm((prev) => ({ ...prev, images: e.target.value }))}
+                rows={4}
+                placeholder="URLs das imagens (uma por linha)"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
+              />
+
+              <div className="md:col-span-2 flex justify-end gap-2 pt-2">
+                <button type="button" onClick={resetForm} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-700">Cancelar</button>
+                <button onClick={saveProduct} className="rounded-lg bg-[#1767ae] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-white">{editingId ? 'Atualizar' : 'Incluir'}</button>
+              </div>
+            </div>
+          </AdminModal>
+        </section>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Galeria de Fotos</h1>
         <p className="text-gray-400 text-sm">{products.length} produtos disponíveis</p>
@@ -349,7 +532,12 @@ export default function Fotos() {
                 transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.4) }}
                 className="h-full"
               >
-                <PhotoCard product={product} />
+                <PhotoCard
+                  product={product}
+                  showAdminMenu={isAdmin}
+                  onEdit={() => startEdit(product)}
+                  onDelete={() => removeProduct(product.id)}
+                />
               </motion.div>
             ))}
           </div>

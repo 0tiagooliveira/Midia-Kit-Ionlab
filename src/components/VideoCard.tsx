@@ -3,12 +3,16 @@ import { VideoItem } from '../types';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { trackEvent, trackVideoOpen } from '../lib/analytics';
+import AdminItemMenu from './admin/AdminItemMenu';
 
 interface VideoCardProps {
   video: VideoItem;
+  showAdminMenu?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function VideoCard({ video }: VideoCardProps) {
+export default function VideoCard({ video, showAdminMenu = false, onEdit, onDelete }: VideoCardProps) {
   const [format, setFormat] = useState<'horizontal' | 'vertical'>(
     video.youtubeId ? 'horizontal' : 'vertical'
   );
@@ -34,6 +38,7 @@ export default function VideoCard({ video }: VideoCardProps) {
           <span className="text-[10px] uppercase tracking-widest font-bold text-ion-blue bg-blue-50 px-2 py-1 rounded">
             {video.category}
           </span>
+          {showAdminMenu && onEdit && onDelete ? <AdminItemMenu onEdit={onEdit} onDelete={onDelete} /> : null}
         </div>
         
         <div className="flex gap-2">

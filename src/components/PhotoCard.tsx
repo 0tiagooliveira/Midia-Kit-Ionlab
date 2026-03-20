@@ -1,6 +1,7 @@
 import { useState, type MouseEvent } from 'react';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { trackPhotoDownload } from '../lib/analytics';
+import AdminItemMenu from './admin/AdminItemMenu';
 
 export interface FotoProduct {
   id: string;
@@ -11,7 +12,14 @@ export interface FotoProduct {
   category: string;
 }
 
-export default function PhotoCard({ product }: { product: FotoProduct }) {
+interface PhotoCardProps {
+  product: FotoProduct;
+  showAdminMenu?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+export default function PhotoCard({ product, showAdminMenu = false, onEdit, onDelete }: PhotoCardProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const images = product.images.filter(Boolean);
@@ -74,6 +82,11 @@ export default function PhotoCard({ product }: { product: FotoProduct }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full">
       {/* Image area */}
       <div className="relative aspect-square bg-gray-50 flex-shrink-0">
+        {showAdminMenu && onEdit && onDelete ? (
+          <div className="absolute right-2 top-2 z-10">
+            <AdminItemMenu onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        ) : null}
         <img
           src={currentImage}
           alt={product.name}
