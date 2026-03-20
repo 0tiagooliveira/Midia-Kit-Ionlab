@@ -7,6 +7,7 @@ import Manuais from './pages/Manuais';
 import Fotos from './pages/Fotos';
 import Contato from './pages/Contato';
 import CatalogosRedirect from './pages/CatalogosRedirect';
+import Admin from './pages/Admin';
 import { useEffect } from 'react';
 import { setAnalyticsUserProps, trackPageView } from './lib/analytics';
 
@@ -16,7 +17,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/videos': 'Vídeos | Mídia Kit IonLab',
   '/manuais': 'Manuais | Mídia Kit IonLab',
   '/fotos': 'Fotos | Mídia Kit IonLab',
-  '/contato': 'Contato | Mídia Kit IonLab'
+  '/contato': 'Contato | Mídia Kit IonLab',
+  '/admin': 'Admin | Mídia Kit IonLab'
 };
 
 function ScrollToTop() {
@@ -47,6 +49,7 @@ function AppContent() {
           <Route path="/manuais" element={<Manuais />} />
           <Route path="/fotos" element={<Fotos />} />
           <Route path="/contato" element={<Contato />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
       <Footer />

@@ -86,6 +86,22 @@ export default function Footer() {
                   Fotos
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/admin"
+                  onClick={() => {
+                    trackNavigationClick({
+                      source: 'footer_quick_access',
+                      label: 'Admin',
+                      destination: '/admin',
+                      linkType: 'internal'
+                    });
+                  }}
+                  className="hover:text-ion-blue transition-colors"
+                >
+                  Admin
+                </Link>
+              </li>
             </ul>
           </div>
           
