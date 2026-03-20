@@ -88,7 +88,7 @@ if %errorlevel% neq 0 (
 echo Build concluido com sucesso!
 echo.
 
-echo 3. Fazendo o deploy do site no Firebase Hosting...
+echo 3. Fazendo o deploy do site e das rules no Firebase...
 if not exist "firebase.json" (
     echo firebase.json nao encontrado na raiz.
     echo Configure o Firebase Hosting antes de executar este script.
@@ -96,7 +96,14 @@ if not exist "firebase.json" (
     exit /b 1
 )
 
-call npx firebase deploy --only hosting
+if not exist "firestore.rules" (
+    echo firestore.rules nao encontrado na raiz.
+    echo Crie o arquivo de rules antes de executar este script.
+    pause
+    exit /b 1
+)
+
+call npx firebase deploy --only hosting,firestore:rules
 if %errorlevel% neq 0 (
     echo.
     echo Erro no Deploy! Verifique o console acima.
