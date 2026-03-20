@@ -1,20 +1,42 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Mídia Kit - IONLAB
 
-# Run and deploy your AI Studio app
+Plataforma de catálogo de produtos para a IONLAB. Organize e gerencie fotos, vídeos e manuais de equipamentos de forma simples e prática.
 
-This contains everything you need to run your app locally.
+## Como usar
 
-View your app in AI Studio: https://ai.studio/apps/14675d30-15a5-46c9-a4d7-401af4bd6c62
+### Para acessar
+Abra o site e navegue pelas seções:
+- **Fotos**: Galeria de equipamentos
+- **Vídeos**: Tutoriais e demonstrações
+- **Manuais**: Documentos técnicos dos produtos
+- **Contato**: Formulário de suporte
 
-## Run Locally
+### Para admin/gerenciar
+1. Faça login como administrador
+2. Clique em **Gerenciar Fotos**, **Gerenciar Vídeos** ou **Gerenciar Manuais**
+3. Você pode:
+   - **Importar CSV** com vários produtos de uma vez
+   - **Criar** novo item manualmente
+   - **Editar** informações de um item
+   - **Excluir** ou marcar como descontinuado
 
-**Prerequisites:**  Node.js
+## Para desenvolvedores
 
+**Pré-requisitos:**
+- Node.js 16+
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+**Instalar e rodar:**
+```bash
+npm install
+npm run dev
+```
+
+O projeto usa:
+- React + TypeScript
+- Firebase (hospedagem e banco de dados)
+- Tailwind CSS (estilos)
+- Vite (build)
+
+## Deploy
+
+O projeto é automaticamente publicado no Firebase Hosting.
