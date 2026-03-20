@@ -200,7 +200,7 @@ export default function CSVUploadModal({
       const products: FotoProduct[] = [];
       rows.forEach((row, idx) => {
         const product = mapColumnsToProduct(headers, row);
-        if (product && product.images.length > 0) {
+        if (product) {
           products.push(product);
         }
       });
