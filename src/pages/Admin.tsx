@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
 import {
+  getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   User
 } from 'firebase/auth';
@@ -30,7 +32,28 @@ function getAuthErrorMessage(error: unknown) {
     return 'Dominio nao autorizado no Firebase Auth. Adicione localhost em Authorized domains.';
   }
 
+  if (code === 'auth/popup-blocked') {
+    return 'Popup bloqueado. Tentando login por redirecionamento...';
+  }
+
+  if (code === 'auth/internal-error') {
+    return 'Falha interna no popup do Google. Tentando login por redirecionamento...';
+  }
+
   return error instanceof Error ? error.message : 'Nao foi possivel fazer login.';
+}
+
+function shouldFallbackToRedirect(error: unknown) {
+  const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+  const message = error instanceof Error ? error.message : '';
+
+  return (
+    code === 'auth/popup-blocked' ||
+    code === 'auth/popup-closed-by-user' ||
+    code === 'auth/cancelled-popup-request' ||
+    code === 'auth/internal-error' ||
+    message.includes('Pending promise was never set')
+  );
 }
 
 export default function Admin() {
@@ -44,6 +67,10 @@ export default function Admin() {
   const [infoMessage, setInfoMessage] = useState('');
 
   useEffect(() => {
+    getRedirectResult(auth).catch(() => {
+      // Redirect result may be empty when user did not come from redirect flow.
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
 
@@ -96,6 +123,13 @@ export default function Admin() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (error) {
+      if (shouldFallbackToRedirect(error)) {
+        setInfoMessage('Abrindo login do Google por redirecionamento...');
+        const provider = new GoogleAuthProvider();
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+
       setErrorMessage(getAuthErrorMessage(error));
     } finally {
       setSubmitting(false);
