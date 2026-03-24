@@ -145,7 +145,7 @@ function mapColumnsToProduct(
     images: images.length > 0 ? images : [],
     brand: marca,
     model: modelo,
-    category: category || 'Sem categoria',
+    category: category || 'Outros',
     discontinued: false,
   };
 }

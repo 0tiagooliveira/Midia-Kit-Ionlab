@@ -13,6 +13,29 @@ import { Plus, Upload as UploadIcon } from 'lucide-react';
 const PRODUCTS_CACHE_KEY = 'fotos-products-cache-v1';
 const INITIAL_RENDER_LIMIT = 120;
 const RENDER_STEP = 120;
+const DEFAULT_CATEGORY = 'Outros';
+const EQUIPAMENTOS_LABEL = 'Equipamentos';
+
+function normalizeCategoryKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+const EQUIPAMENTOS_KEY = normalizeCategoryKey(EQUIPAMENTOS_LABEL);
+
+function getDisplayCategory(value?: string | null): string {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return DEFAULT_CATEGORY;
+  if (normalizeCategoryKey(trimmed) === EQUIPAMENTOS_KEY) return EQUIPAMENTOS_LABEL;
+  return trimmed;
+}
+
+function hasRenderableImages(product: FotoProduct): boolean {
+  return Array.isArray(product.images) && product.images.some((img) => !!img && img.trim().startsWith('http'));
+}
 
 function readCachedProducts(): FotoProduct[] {
   if (typeof window === 'undefined') return [];
@@ -148,7 +171,7 @@ export default function Fotos() {
         name: patch.name || 'Sem nome',
         brand: patch.brand || '',
         model: patch.model || '',
-        category: patch.category || 'Outros',
+        category: getDisplayCategory(patch.category),
         discontinued: patch.discontinued === true,
         images: Array.isArray(patch.images) ? patch.images.filter(Boolean) : []
       }));
@@ -240,7 +263,7 @@ export default function Fotos() {
         name: form.name.trim(),
         brand: form.brand.trim(),
         model: form.model.trim(),
-        category: form.category.trim() || 'Outros',
+        category: getDisplayCategory(form.category),
         discontinued: form.discontinued,
         images,
         deleted: false,
@@ -405,7 +428,7 @@ export default function Fotos() {
               name: product.name.trim(),
               brand: product.brand || '',
               model: product.model || '',
-              category: product.category || 'Outros',
+              category: getDisplayCategory(product.category),
               discontinued: product.discontinued === true,
               images: product.images,
               deleted: false,
@@ -451,21 +474,31 @@ export default function Fotos() {
     }
   };
 
-  const categories = useMemo(() => {
-    const seen = new Set<string>();
-    const cats: string[] = [];
-    for (const p of products) {
-      if (p.category && !seen.has(p.category)) {
-        seen.add(p.category);
-        cats.push(p.category);
-      }
-    }
-    return cats;
+  const renderableProducts = useMemo(() => {
+    return products.filter(hasRenderableImages);
   }, [products]);
 
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from<string>(
+      new Set<string>(renderableProducts.map((p) => getDisplayCategory(p.category)))
+    );
+
+    uniqueCategories.sort((a, b) => {
+      const aIsEquipamentos = normalizeCategoryKey(a) === EQUIPAMENTOS_KEY;
+      const bIsEquipamentos = normalizeCategoryKey(b) === EQUIPAMENTOS_KEY;
+      if (aIsEquipamentos && !bIsEquipamentos) return -1;
+      if (!aIsEquipamentos && bIsEquipamentos) return 1;
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+    return uniqueCategories;
+  }, [renderableProducts]);
+
   const filtered = useMemo(() => {
-    let result = products;
-    if (activeCategory) result = result.filter(p => p.category === activeCategory);
+    let result = renderableProducts;
+    if (activeCategory) {
+      result = result.filter((p) => getDisplayCategory(p.category) === activeCategory);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -473,7 +506,7 @@ export default function Fotos() {
       );
     }
     return result;
-  }, [products, activeCategory, search]);
+  }, [renderableProducts, activeCategory, search]);
 
   useEffect(() => {
     setRenderLimit(INITIAL_RENDER_LIMIT);
@@ -482,7 +515,7 @@ export default function Fotos() {
   const grouped = useMemo(() => {
     const groups: Record<string, FotoProduct[]> = {};
     for (const p of filtered) {
-      const cat = p.category || 'Outros';
+      const cat = getDisplayCategory(p.category);
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(p);
     }
@@ -497,7 +530,11 @@ export default function Fotos() {
   const displayedGroups = useMemo(() => {
     let remaining = renderLimit;
     const result: Array<[string, FotoProduct[]]> = [];
-    for (const [category, items] of Object.entries(grouped) as Array<[string, FotoProduct[]]>) {
+    const groupedByCategoryOrder = categories
+      .filter((category) => grouped[category])
+      .map((category) => [category, grouped[category]] as [string, FotoProduct[]]);
+
+    for (const [category, items] of groupedByCategoryOrder) {
       if (remaining <= 0) break;
       const slice = items.slice(0, remaining);
       if (slice.length > 0) {
@@ -506,7 +543,7 @@ export default function Fotos() {
       }
     }
     return result;
-  }, [grouped, renderLimit]);
+  }, [categories, grouped, renderLimit]);
 
   const hasMoreToRender = filtered.length > renderLimit;
 
@@ -607,7 +644,7 @@ export default function Fotos() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Galeria de Fotos</h1>
-        <p className="text-gray-400 text-sm">{products.length} produtos disponíveis</p>
+        <p className="text-gray-400 text-sm">{renderableProducts.length} produtos disponíveis</p>
       </motion.div>
 
       <div className="mb-10 flex items-center gap-3 w-full md:max-w-2xl">
