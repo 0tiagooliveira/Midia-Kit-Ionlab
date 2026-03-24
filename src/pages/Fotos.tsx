@@ -16,8 +16,73 @@ const RENDER_STEP = 120;
 const DEFAULT_CATEGORY = 'Outros';
 const EQUIPAMENTOS_LABEL = 'Equipamentos';
 const ACCESSORIES_LABEL = 'Acessórios/Peças de reposição';
+const EQUIPMENT_SUBCATEGORIES = [
+  'Agitadores',
+  'Analisadores',
+  'Banho Maria',
+  'Banho Seco',
+  'Bombas de Vácuo',
+  'Câmaras de Conservação',
+  'Centrífugas',
+  'Chapa Aquecedora',
+  'Condutivímetros',
+  'Contadores de Colônias',
+  'Contadores de Células/Volumes',
+  'Dispensadores',
+  'Espectrofotômetros',
+  'Esterilizadores',
+  'Estufas',
+  'Evaporadores Rotativos',
+  'Incubadoras',
+  'Leitoras e Lavadoras de Microplacas ELISA',
+  'Mantas Aquecedoras',
+  'Máquina de Gelo em Escamas',
+  'Mesa Anti-Vibratória',
+  'Micro Homogeneizadores',
+  'Microscopia',
+  'pHmetros',
+  'Plasma Gel',
+  'Refratômetros',
+  'Termocicladores',
+  'Timers, Termômetros, Termohigrômetros e Cronômetros',
+  'Turbidímetros',
+  'Viscosímetro'
+] as const;
 
-function normalizeCategoryKey(value: string): string {
+const SUBCATEGORY_RULES: Record<string, { keywords: string[]; modelPrefixes?: string[] }> = {
+  'Agitadores': { keywords: ['agitador'] },
+  'Analisadores': { keywords: ['analisador'] },
+  'Banho Maria': { keywords: ['banho maria', 'sorologico'], modelPrefixes: ['BMD'] },
+  'Banho Seco': { keywords: ['banho seco'], modelPrefixes: ['BS'] },
+  'Bombas de Vácuo': { keywords: ['bomba de vacuo', 'bomba vacuo'] },
+  'Câmaras de Conservação': { keywords: ['camara de conservacao', 'camara conservacao'] },
+  'Centrífugas': { keywords: ['centrifuga', 'rotor'], modelPrefixes: ['DTC', 'DTB'] },
+  'Chapa Aquecedora': { keywords: ['chapa aquecedora'] },
+  'Condutivímetros': { keywords: ['condutivimetro', 'condutividade'] },
+  'Contadores de Colônias': { keywords: ['contador de colonias'] },
+  'Contadores de Células/Volumes': { keywords: ['contador de celulas', 'contador de volumes', 'celulas/volumes'] },
+  'Dispensadores': { keywords: ['dispensador'] },
+  'Espectrofotômetros': { keywords: ['espectrofotometro', 'uv-vis', 'nano'], modelPrefixes: ['NE'] },
+  'Esterilizadores': { keywords: ['esterilizador', 'autoclave'] },
+  'Estufas': { keywords: ['estufa'] },
+  'Evaporadores Rotativos': { keywords: ['evaporador rotativo'] },
+  'Incubadoras': { keywords: ['incubadora'] },
+  'Leitoras e Lavadoras de Microplacas ELISA': { keywords: ['leitora de microplacas', 'lavadora de microplacas', 'microplaca', 'elisa'] },
+  'Mantas Aquecedoras': { keywords: ['manta aquecedora'] },
+  'Máquina de Gelo em Escamas': { keywords: ['maquina de gelo', 'gelo em escamas'] },
+  'Mesa Anti-Vibratória': { keywords: ['mesa anti-vibratoria'] },
+  'Micro Homogeneizadores': { keywords: ['micro homogeneizador', 'homogeneizador'] },
+  'Microscopia': { keywords: ['microscop', 'estereomicroscop', 'ocular', 'objetiva', 'lente para microscopio'], modelPrefixes: ['BIO', 'BLUE', 'ECZ', 'GE'] },
+  'pHmetros': { keywords: ['phmetro', 'phmetro', 'ph'], modelPrefixes: ['PH', 'PHP'] },
+  'Plasma Gel': { keywords: ['plasma gel'], modelPrefixes: ['PGA', 'PGAR', 'PGAB', 'BABY'] },
+  'Refratômetros': { keywords: ['refratometro'] },
+  'Termocicladores': { keywords: ['termociclador'] },
+  'Timers, Termômetros, Termohigrômetros e Cronômetros': { keywords: ['timer', 'termometro', 'termohigrometro', 'cronometro'] },
+  'Turbidímetros': { keywords: ['turbidimetro'] },
+  'Viscosímetro': { keywords: ['viscosimetro'], modelPrefixes: ['VIS'] }
+};
+
+function normalizeText(value: string): string {
   return value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -25,41 +90,48 @@ function normalizeCategoryKey(value: string): string {
     .trim();
 }
 
-const EQUIPAMENTOS_KEY = normalizeCategoryKey(EQUIPAMENTOS_LABEL);
-const ACCESSORIES_KEY = normalizeCategoryKey(ACCESSORIES_LABEL);
-const MATERIAL_CATEGORY_KEYS = new Set([
-  normalizeCategoryKey('Vidraria'),
-  normalizeCategoryKey('Cubetas'),
-  normalizeCategoryKey('Ferragens'),
-  normalizeCategoryKey('Meios de Cultura'),
-  normalizeCategoryKey('Plásticos'),
-  normalizeCategoryKey('Pipetas e Pipetadores'),
-  normalizeCategoryKey('Funil de Separação')
-]);
-
-function isAccessoriesCategory(category: string): boolean {
-  return normalizeCategoryKey(category) === ACCESSORIES_KEY;
-}
-
-function shouldShowAccessoriesWithCategory(category: string): boolean {
-  const key = normalizeCategoryKey(category);
-  if (!key) return false;
-  if (key === EQUIPAMENTOS_KEY || key === ACCESSORIES_KEY) return false;
-  if (MATERIAL_CATEGORY_KEYS.has(key)) return false;
-  return true;
-}
+const EQUIPAMENTOS_KEY = normalizeText(EQUIPAMENTOS_LABEL);
+const ACCESSORIES_KEY = normalizeText(ACCESSORIES_LABEL);
+const SUBCATEGORY_SET: ReadonlySet<string> = new Set(EQUIPMENT_SUBCATEGORIES);
 
 function getDisplayCategory(value?: string | null): string {
   const trimmed = (value || '').trim();
   if (!trimmed) return DEFAULT_CATEGORY;
-  const key = normalizeCategoryKey(trimmed);
-  if (key === EQUIPAMENTOS_KEY) return EQUIPAMENTOS_LABEL;
-  if (key === ACCESSORIES_KEY) return ACCESSORIES_LABEL;
+
+  const normalized = normalizeText(trimmed);
+  if (normalized === EQUIPAMENTOS_KEY) return EQUIPAMENTOS_LABEL;
+  if (normalized === ACCESSORIES_KEY) return ACCESSORIES_LABEL;
   return trimmed;
 }
 
-function hasRenderableImages(product: FotoProduct): boolean {
-  return Array.isArray(product.images) && product.images.some((img) => !!img && img.trim().startsWith('http'));
+function isEquipamentosCategory(category: string): boolean {
+  return normalizeText(category) === EQUIPAMENTOS_KEY;
+}
+
+function isAccessoriesCategory(category: string): boolean {
+  return normalizeText(category) === ACCESSORIES_KEY;
+}
+
+function inferEquipmentSubcategory(product: FotoProduct): string | null {
+  const text = normalizeText(`${product.name || ''} ${product.model || ''}`);
+  const normalizedModel = normalizeText(product.model || '').replace(/[^a-z0-9]/g, '');
+
+  for (const subcategory of EQUIPMENT_SUBCATEGORIES) {
+    const rule = SUBCATEGORY_RULES[subcategory];
+    if (!rule) continue;
+
+    const matchesKeyword = rule.keywords.some((keyword) => text.includes(normalizeText(keyword)));
+    const matchesModelPrefix = (rule.modelPrefixes || []).some((prefix) => {
+      const normalizedPrefix = normalizeText(prefix).replace(/[^a-z0-9]/g, '');
+      return normalizedPrefix && normalizedModel.startsWith(normalizedPrefix);
+    });
+
+    if (matchesKeyword || matchesModelPrefix) {
+      return subcategory;
+    }
+  }
+
+  return null;
 }
 
 function readCachedProducts(): FotoProduct[] {
@@ -196,7 +268,7 @@ export default function Fotos() {
         name: patch.name || 'Sem nome',
         brand: patch.brand || '',
         model: patch.model || '',
-        category: getDisplayCategory(patch.category),
+        category: patch.category || 'Outros',
         discontinued: patch.discontinued === true,
         images: Array.isArray(patch.images) ? patch.images.filter(Boolean) : []
       }));
@@ -288,7 +360,7 @@ export default function Fotos() {
         name: form.name.trim(),
         brand: form.brand.trim(),
         model: form.model.trim(),
-        category: getDisplayCategory(form.category),
+        category: form.category.trim() || 'Outros',
         discontinued: form.discontinued,
         images,
         deleted: false,
@@ -343,8 +415,7 @@ export default function Fotos() {
       }
 
       const ids = Array.from(allIds);
-      const chunkSize = 500;
-      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      const chunkSize = 450;
 
       for (let i = 0; i < ids.length; i += chunkSize) {
         const batch = writeBatch(db);
@@ -357,11 +428,6 @@ export default function Fotos() {
           );
         });
         await batch.commit();
-
-        // Pequeno delay entre batches para não sobrecarregar
-        if (i + chunkSize < ids.length) {
-          await delay(300);
-        }
       }
 
       setImportCancelFlag(false);
@@ -424,65 +490,50 @@ export default function Fotos() {
 
     try {
       const total = importedProducts.length;
-      const batchSize = 500;
-      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      for (let batchStart = 0; batchStart < importedProducts.length; batchStart += batchSize) {
+      for (let index = 0; index < importedProducts.length; index++) {
         // Verificar se foi cancelado
         if (importCancelRef.current) {
           setIsImporting(false);
           setImportCancelFlag(false);
-          alert(`Importacao cancelada em ${batchStart}/${total} produtos.`);
+          alert(`Importacao cancelada em ${index}/${total} produtos.`);
           return;
         }
 
-        const batchEnd = Math.min(batchStart + batchSize, importedProducts.length);
-        const batch = writeBatch(db);
+        const product = importedProducts[index];
+        const modelKey = normalizeForMatch(product.model || '');
+        const nameKey = normalizeForMatch(product.name || '');
+        const matchedId = (modelKey && existingByModel.get(modelKey)) || (nameKey && existingByName.get(nameKey));
+        const fallbackId = slugify(product.model || product.name) || `produto-${index + 1}`;
+        const id = matchedId || fallbackId;
+        
+        await setDoc(
+          doc(db, 'fotos', id),
+          {
+            name: product.name.trim(),
+            brand: product.brand || '',
+            model: product.model || '',
+            category: product.category || 'Outros',
+            discontinued: product.discontinued === true,
+            images: product.images,
+            deleted: false,
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
 
-        for (let index = batchStart; index < batchEnd; index++) {
-          const product = importedProducts[index];
-          const modelKey = normalizeForMatch(product.model || '');
-          const nameKey = normalizeForMatch(product.name || '');
-          const matchedId = (modelKey && existingByModel.get(modelKey)) || (nameKey && existingByName.get(nameKey));
-          const fallbackId = slugify(product.model || product.name) || `produto-${index + 1}`;
-          const id = matchedId || fallbackId;
-
-          batch.set(
-            doc(db, 'fotos', id),
-            {
-              name: product.name.trim(),
-              brand: product.brand || '',
-              model: product.model || '',
-              category: getDisplayCategory(product.category),
-              discontinued: product.discontinued === true,
-              images: product.images,
-              deleted: false,
-              updatedAt: serverTimestamp()
-            },
-            { merge: true }
-          );
-
-          if (modelKey && !existingByModel.has(modelKey)) {
-            existingByModel.set(modelKey, id);
-          }
-
-          if (nameKey && !existingByName.has(nameKey)) {
-            existingByName.set(nameKey, id);
-          }
+        if (modelKey && !existingByModel.has(modelKey)) {
+          existingByModel.set(modelKey, id);
         }
 
-        // Fazer commit do batch
-        await batch.commit();
+        if (nameKey && !existingByName.has(nameKey)) {
+          existingByName.set(nameKey, id);
+        }
         
         // Atualizar progresso
-        const percent = Math.round((batchEnd / total) * 100);
+        const percent = Math.round(((index + 1) / total) * 100);
         setImportProgress(percent);
         onProgress?.(percent);
-
-        // Pequeno delay entre batches para não sobrecarregar
-        if (batchEnd < importedProducts.length) {
-          await delay(300);
-        }
       }
       
       // Aguardar um pouco antes de fechar para mostrar 100%
@@ -499,49 +550,69 @@ export default function Fotos() {
     }
   };
 
-  const renderableProducts = useMemo(() => {
-    return products.filter(hasRenderableImages);
+  const categories = useMemo(() => {
+    const directCategories = new Set<string>();
+    const inferredSubcategories = new Set<string>();
+
+    for (const p of products) {
+      const displayCategory = getDisplayCategory(p.category);
+      directCategories.add(displayCategory);
+
+      if (isEquipamentosCategory(displayCategory)) {
+        const inferred = inferEquipmentSubcategory(p);
+        if (inferred) inferredSubcategories.add(inferred);
+      }
+    }
+
+    const ordered: string[] = [];
+
+    if (directCategories.has(EQUIPAMENTOS_LABEL)) {
+      ordered.push(EQUIPAMENTOS_LABEL);
+    }
+
+    for (const subcategory of EQUIPMENT_SUBCATEGORIES) {
+      if (inferredSubcategories.has(subcategory) || directCategories.has(subcategory)) {
+        ordered.push(subcategory);
+      }
+    }
+
+    const remaining = Array.from(directCategories)
+      .filter((category) => category !== EQUIPAMENTOS_LABEL && !SUBCATEGORY_SET.has(category))
+      .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+    return [...ordered, ...remaining];
   }, [products]);
 
-  const categories = useMemo(() => {
-    const uniqueCategories = Array.from<string>(
-      new Set<string>(renderableProducts.map((p) => getDisplayCategory(p.category)))
-    );
-
-    uniqueCategories.sort((a, b) => {
-      const aIsEquipamentos = normalizeCategoryKey(a) === EQUIPAMENTOS_KEY;
-      const bIsEquipamentos = normalizeCategoryKey(b) === EQUIPAMENTOS_KEY;
-      if (aIsEquipamentos && !bIsEquipamentos) return -1;
-      if (!aIsEquipamentos && bIsEquipamentos) return 1;
-      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
-    });
-
-    return uniqueCategories;
-  }, [renderableProducts]);
-
-  const hasAccessoriesItems = useMemo(() => {
-    return renderableProducts.some((p) => isAccessoriesCategory(getDisplayCategory(p.category)));
-  }, [renderableProducts]);
-
   const filtered = useMemo(() => {
-    let result = renderableProducts;
+    let result = products;
+
     if (activeCategory) {
-      const shouldIncludeAccessories = shouldShowAccessoriesWithCategory(activeCategory) && hasAccessoriesItems;
-      result = result.filter((p) => {
-        const category = getDisplayCategory(p.category);
-        if (category === activeCategory) return true;
-        if (shouldIncludeAccessories && isAccessoriesCategory(category)) return true;
-        return false;
-      });
+      if (activeCategory === EQUIPAMENTOS_LABEL) {
+        result = result.filter((p) => isEquipamentosCategory(getDisplayCategory(p.category)));
+      } else if (SUBCATEGORY_SET.has(activeCategory)) {
+        result = result.filter((p) => {
+          const displayCategory = getDisplayCategory(p.category);
+          const inferred = inferEquipmentSubcategory(p);
+
+          if (displayCategory === activeCategory) return true;
+          if (isEquipamentosCategory(displayCategory) && inferred === activeCategory) return true;
+          if (isAccessoriesCategory(displayCategory) && inferred === activeCategory) return true;
+          return false;
+        });
+      } else {
+        result = result.filter((p) => getDisplayCategory(p.category) === activeCategory);
+      }
     }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        p => p.name.toLowerCase().includes(q) || p.model.toLowerCase().includes(q)
+        (p) => p.name.toLowerCase().includes(q) || p.model.toLowerCase().includes(q)
       );
     }
+
     return result;
-  }, [renderableProducts, activeCategory, hasAccessoriesItems, search]);
+  }, [products, activeCategory, search]);
 
   useEffect(() => {
     setRenderLimit(INITIAL_RENDER_LIMIT);
@@ -549,46 +620,64 @@ export default function Fotos() {
 
   const grouped = useMemo(() => {
     const groups: Record<string, FotoProduct[]> = {};
+
     for (const p of filtered) {
-      const cat = getDisplayCategory(p.category);
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(p);
+      const displayCategory = getDisplayCategory(p.category);
+      const inferred = inferEquipmentSubcategory(p);
+
+      let groupCategory = displayCategory || DEFAULT_CATEGORY;
+
+      if (activeCategory && SUBCATEGORY_SET.has(activeCategory)) {
+        if (isAccessoriesCategory(displayCategory) && inferred === activeCategory) {
+          groupCategory = ACCESSORIES_LABEL;
+        } else if (displayCategory === activeCategory || (isEquipamentosCategory(displayCategory) && inferred === activeCategory)) {
+          groupCategory = activeCategory;
+        }
+      }
+
+      if (!groups[groupCategory]) groups[groupCategory] = [];
+      groups[groupCategory].push(p);
     }
+
     for (const category of Object.keys(groups)) {
       groups[category].sort((a, b) =>
         a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
       );
     }
+
     return groups;
-  }, [filtered]);
+  }, [filtered, activeCategory]);
 
   const displayedGroups = useMemo(() => {
     let remaining = renderLimit;
     const result: Array<[string, FotoProduct[]]> = [];
-    const categoryOrder = (() => {
-      if (!activeCategory) return categories;
-      const shouldIncludeAccessories = shouldShowAccessoriesWithCategory(activeCategory) && hasAccessoriesItems;
-      const ordered = [activeCategory];
-      if (shouldIncludeAccessories) {
-        ordered.push(ACCESSORIES_LABEL);
+
+    const orderedCategories = (() => {
+      if (activeCategory && SUBCATEGORY_SET.has(activeCategory)) {
+        return [activeCategory, ACCESSORIES_LABEL];
       }
-      return ordered;
+
+      if (activeCategory) {
+        return [activeCategory];
+      }
+
+      return categories;
     })();
 
-    const groupedByCategoryOrder = categoryOrder
-      .filter((category) => grouped[category])
-      .map((category) => [category, grouped[category]] as [string, FotoProduct[]]);
-
-    for (const [category, items] of groupedByCategoryOrder) {
+    for (const category of orderedCategories) {
+      const items = grouped[category];
+      if (!items || items.length === 0) continue;
       if (remaining <= 0) break;
+
       const slice = items.slice(0, remaining);
       if (slice.length > 0) {
         result.push([category, slice]);
         remaining -= slice.length;
       }
     }
+
     return result;
-  }, [activeCategory, categories, grouped, hasAccessoriesItems, renderLimit]);
+  }, [grouped, renderLimit, activeCategory, categories]);
 
   const hasMoreToRender = filtered.length > renderLimit;
 
@@ -689,7 +778,7 @@ export default function Fotos() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">Galeria de Fotos</h1>
-        <p className="text-gray-400 text-sm">{renderableProducts.length} produtos disponíveis</p>
+        <p className="text-gray-400 text-sm">{products.length} produtos disponíveis</p>
       </motion.div>
 
       <div className="mb-10 flex items-center gap-3 w-full md:max-w-2xl">
