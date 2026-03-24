@@ -15,6 +15,7 @@ const INITIAL_RENDER_LIMIT = 120;
 const RENDER_STEP = 120;
 const DEFAULT_CATEGORY = 'Outros';
 const EQUIPAMENTOS_LABEL = 'Equipamentos';
+const ACCESSORIES_LABEL = 'Acessórios/Peças de reposição';
 
 function normalizeCategoryKey(value: string): string {
   return value
@@ -25,11 +26,35 @@ function normalizeCategoryKey(value: string): string {
 }
 
 const EQUIPAMENTOS_KEY = normalizeCategoryKey(EQUIPAMENTOS_LABEL);
+const ACCESSORIES_KEY = normalizeCategoryKey(ACCESSORIES_LABEL);
+const MATERIAL_CATEGORY_KEYS = new Set([
+  normalizeCategoryKey('Vidraria'),
+  normalizeCategoryKey('Cubetas'),
+  normalizeCategoryKey('Ferragens'),
+  normalizeCategoryKey('Meios de Cultura'),
+  normalizeCategoryKey('Plásticos'),
+  normalizeCategoryKey('Pipetas e Pipetadores'),
+  normalizeCategoryKey('Funil de Separação')
+]);
+
+function isAccessoriesCategory(category: string): boolean {
+  return normalizeCategoryKey(category) === ACCESSORIES_KEY;
+}
+
+function shouldShowAccessoriesWithCategory(category: string): boolean {
+  const key = normalizeCategoryKey(category);
+  if (!key) return false;
+  if (key === EQUIPAMENTOS_KEY || key === ACCESSORIES_KEY) return false;
+  if (MATERIAL_CATEGORY_KEYS.has(key)) return false;
+  return true;
+}
 
 function getDisplayCategory(value?: string | null): string {
   const trimmed = (value || '').trim();
   if (!trimmed) return DEFAULT_CATEGORY;
-  if (normalizeCategoryKey(trimmed) === EQUIPAMENTOS_KEY) return EQUIPAMENTOS_LABEL;
+  const key = normalizeCategoryKey(trimmed);
+  if (key === EQUIPAMENTOS_KEY) return EQUIPAMENTOS_LABEL;
+  if (key === ACCESSORIES_KEY) return ACCESSORIES_LABEL;
   return trimmed;
 }
 
@@ -494,10 +519,20 @@ export default function Fotos() {
     return uniqueCategories;
   }, [renderableProducts]);
 
+  const hasAccessoriesItems = useMemo(() => {
+    return renderableProducts.some((p) => isAccessoriesCategory(getDisplayCategory(p.category)));
+  }, [renderableProducts]);
+
   const filtered = useMemo(() => {
     let result = renderableProducts;
     if (activeCategory) {
-      result = result.filter((p) => getDisplayCategory(p.category) === activeCategory);
+      const shouldIncludeAccessories = shouldShowAccessoriesWithCategory(activeCategory) && hasAccessoriesItems;
+      result = result.filter((p) => {
+        const category = getDisplayCategory(p.category);
+        if (category === activeCategory) return true;
+        if (shouldIncludeAccessories && isAccessoriesCategory(category)) return true;
+        return false;
+      });
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -506,7 +541,7 @@ export default function Fotos() {
       );
     }
     return result;
-  }, [renderableProducts, activeCategory, search]);
+  }, [renderableProducts, activeCategory, hasAccessoriesItems, search]);
 
   useEffect(() => {
     setRenderLimit(INITIAL_RENDER_LIMIT);
@@ -530,7 +565,17 @@ export default function Fotos() {
   const displayedGroups = useMemo(() => {
     let remaining = renderLimit;
     const result: Array<[string, FotoProduct[]]> = [];
-    const groupedByCategoryOrder = categories
+    const categoryOrder = (() => {
+      if (!activeCategory) return categories;
+      const shouldIncludeAccessories = shouldShowAccessoriesWithCategory(activeCategory) && hasAccessoriesItems;
+      const ordered = [activeCategory];
+      if (shouldIncludeAccessories) {
+        ordered.push(ACCESSORIES_LABEL);
+      }
+      return ordered;
+    })();
+
+    const groupedByCategoryOrder = categoryOrder
       .filter((category) => grouped[category])
       .map((category) => [category, grouped[category]] as [string, FotoProduct[]]);
 
@@ -543,7 +588,7 @@ export default function Fotos() {
       }
     }
     return result;
-  }, [categories, grouped, renderLimit]);
+  }, [activeCategory, categories, grouped, hasAccessoriesItems, renderLimit]);
 
   const hasMoreToRender = filtered.length > renderLimit;
 
