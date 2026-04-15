@@ -18,11 +18,11 @@ export default function ManualCard({ manual, showAdminMenu = false, onEdit, onDe
         </div>
       ) : null}
       {manual.coverUrl ? (
-        <div className="mb-6 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+        <div className="mb-6 h-56 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-2">
           <img
             src={manual.coverUrl}
             alt={`Capa de ${manual.title}`}
-            className="h-40 w-full object-cover"
+            className="h-full w-full object-contain"
             loading="lazy"
           />
         </div>
