@@ -307,14 +307,7 @@ export const VIDEOS: VideoItem[] = [
   }
 ];
 
-export const MANUAIS: ManualItem[] = [
-  {
-    id: '1',
-    title: 'Manual de Identidade Visual',
-    description: 'Guia completo de uso da marca IonLab.',
-    downloadUrl: '#'
-  }
-];
+export const MANUAIS: ManualItem[] = [];
 
 export const FOTOS: GalleryItem[] = [
   {

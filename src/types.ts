@@ -13,6 +13,7 @@ export interface ManualItem {
   id: string;
   title: string;
   description: string;
+  category?: string;
   discontinued?: boolean;
   coverUrl?: string;
   downloadUrl: string;
