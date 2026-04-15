@@ -14,6 +14,7 @@ export interface ManualItem {
   title: string;
   description: string;
   discontinued?: boolean;
+  coverUrl?: string;
   downloadUrl: string;
 }
 

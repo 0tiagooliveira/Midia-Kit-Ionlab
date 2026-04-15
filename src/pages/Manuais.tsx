@@ -17,7 +17,7 @@ export default function Manuais() {
   const [overrides, setOverrides] = useState<Record<string, ManualOverride>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ id: '', title: '', description: '', discontinued: false, downloadUrl: '' });
+  const [form, setForm] = useState({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'manuais'), (snapshot) => {
@@ -50,6 +50,7 @@ export default function Manuais() {
         title: item.title || 'Sem titulo',
         description: item.description || '',
         discontinued: item.discontinued === true,
+        coverUrl: item.coverUrl || '',
         downloadUrl: item.downloadUrl || '#'
       } as ManualItem));
 
@@ -71,6 +72,7 @@ export default function Manuais() {
         title: form.title.trim(),
         description: form.description.trim(),
         discontinued: form.discontinued,
+        coverUrl: form.coverUrl.trim(),
         downloadUrl: form.downloadUrl.trim() || '#',
         deleted: false,
         updatedAt: serverTimestamp()
@@ -79,7 +81,7 @@ export default function Manuais() {
     );
 
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, downloadUrl: '' });
+    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(false);
   };
 
@@ -89,7 +91,14 @@ export default function Manuais() {
     }
 
     setEditingId(manual.id);
-    setForm({ id: manual.id, title: manual.title, description: manual.description, discontinued: manual.discontinued === true, downloadUrl: manual.downloadUrl });
+    setForm({
+      id: manual.id,
+      title: manual.title,
+      description: manual.description,
+      discontinued: manual.discontinued === true,
+      coverUrl: manual.coverUrl || '',
+      downloadUrl: manual.downloadUrl
+    });
     setModalOpen(true);
   };
 
@@ -99,13 +108,13 @@ export default function Manuais() {
     }
 
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, downloadUrl: '' });
+    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, downloadUrl: '' });
+    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(false);
   };
 
@@ -154,6 +163,7 @@ export default function Manuais() {
                 <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
                 Marcar como descontinuado(a)
               </label>
+              <input value={form.coverUrl} onChange={(e) => setForm((prev) => ({ ...prev, coverUrl: e.target.value }))} placeholder="URL da capa (opcional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
               <input value={form.downloadUrl} onChange={(e) => setForm((prev) => ({ ...prev, downloadUrl: e.target.value }))} placeholder="URL do PDF" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
               <div className="md:col-span-2 flex justify-end gap-2 pt-2">
                 <button type="button" onClick={closeModal} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-700">Cancelar</button>

@@ -17,9 +17,20 @@ export default function ManualCard({ manual, showAdminMenu = false, onEdit, onDe
           <AdminItemMenu onEdit={onEdit} onDelete={onDelete} />
         </div>
       ) : null}
-      <div className="w-14 h-14 bg-gray-50 text-ion-blue rounded-full flex items-center justify-center mb-6 mx-auto group-hover:bg-ion-blue group-hover:text-white transition-colors duration-300">
-        <FileText size={28} />
-      </div>
+      {manual.coverUrl ? (
+        <div className="mb-6 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+          <img
+            src={manual.coverUrl}
+            alt={`Capa de ${manual.title}`}
+            className="h-40 w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div className="w-14 h-14 bg-gray-50 text-ion-blue rounded-full flex items-center justify-center mb-6 mx-auto group-hover:bg-ion-blue group-hover:text-white transition-colors duration-300">
+          <FileText size={28} />
+        </div>
+      )}
       <h3 className="font-bold text-ion-dark mb-3 uppercase tracking-wider text-sm">{manual.title}</h3>
       {manual.discontinued ? (
         <span className="mb-3 inline-block rounded bg-red-50 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-red-700">
