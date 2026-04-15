@@ -17,7 +17,7 @@ export default function Manuais() {
   const [overrides, setOverrides] = useState<Record<string, ManualOverride>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
+  const [form, setForm] = useState({ title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'manuais'), (snapshot) => {
@@ -63,7 +63,7 @@ export default function Manuais() {
       return;
     }
 
-    const id = (editingId || form.id || crypto.randomUUID().slice(0, 8)).trim();
+    const id = (editingId || crypto.randomUUID().slice(0, 8)).trim();
     if (!id) return;
 
     await setDoc(
@@ -81,7 +81,7 @@ export default function Manuais() {
     );
 
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
+    setForm({ title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(false);
   };
 
@@ -92,7 +92,6 @@ export default function Manuais() {
 
     setEditingId(manual.id);
     setForm({
-      id: manual.id,
       title: manual.title,
       description: manual.description,
       discontinued: manual.discontinued === true,
@@ -108,13 +107,13 @@ export default function Manuais() {
     }
 
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
+    setForm({ title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setEditingId(null);
-    setForm({ id: '', title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
+    setForm({ title: '', description: '', discontinued: false, coverUrl: '', downloadUrl: '' });
     setModalOpen(false);
   };
 
@@ -154,11 +153,7 @@ export default function Manuais() {
 
           <AdminModal open={modalOpen} title={editingId ? 'Editar manual' : 'Novo manual'} onClose={closeModal}>
             <form onSubmit={handleSave} className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {!editingId && (
-                <input value={form.id} onChange={(e) => setForm((prev) => ({ ...prev, id: e.target.value }))} placeholder="ID (opcional para novo)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              )}
               <input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Titulo" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-              <input value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Descricao" required className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2" />
               <label className="md:col-span-2 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-700">
                 <input type="checkbox" checked={form.discontinued} onChange={(e) => setForm((prev) => ({ ...prev, discontinued: e.target.checked }))} />
                 Marcar como descontinuado(a)
