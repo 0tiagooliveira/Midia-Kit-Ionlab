@@ -12,6 +12,8 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { isAllowedAdminUser } from '../lib/admin';
+import { Download } from 'lucide-react';
+import { exportMediaKitSpreadsheet } from '../lib/catalogExport';
 
 function getAuthErrorMessage(error: unknown) {
   const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
@@ -63,6 +65,7 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
 
@@ -163,6 +166,21 @@ export default function Admin() {
     await signOut(auth);
   };
 
+  const handleExportSpreadsheet = async () => {
+    setErrorMessage('');
+    setInfoMessage('');
+    setExporting(true);
+
+    try {
+      await exportMediaKitSpreadsheet();
+      setInfoMessage('Planilha exportada com sucesso.');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Nao foi possivel exportar a planilha.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <section className="container py-24">
@@ -184,13 +202,24 @@ export default function Admin() {
           <div className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
             <p className="font-semibold">Voce entrou como administrador.</p>
             <p className="mt-1 break-all">{currentUser.email}</p>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700"
-            >
-              Sair
-            </button>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleExportSpreadsheet}
+                disabled={exporting}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#1767ae] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#12558f] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Download size={14} />
+                {exporting ? 'Exportando...' : 'Exportar planilha'}
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-700"
+              >
+                Sair
+              </button>
+            </div>
           </div>
         ) : currentUser && !isAdmin ? (
           <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">

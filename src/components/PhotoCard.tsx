@@ -2,16 +2,7 @@ import { useState, type MouseEvent } from 'react';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { trackPhotoDownload } from '../lib/analytics';
 import AdminItemMenu from './admin/AdminItemMenu';
-
-export interface FotoProduct {
-  id: string;
-  name: string;
-  images: string[];
-  brand: string;
-  model: string;
-  category: string;
-  discontinued?: boolean;
-}
+import type { FotoProduct } from '../lib/fotos';
 
 interface PhotoCardProps {
   product: FotoProduct;

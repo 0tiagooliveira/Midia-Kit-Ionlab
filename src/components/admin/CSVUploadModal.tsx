@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload as UploadIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { FotoProduct } from '../PhotoCard';
+import type { FotoProduct } from '../../lib/fotos';
 
 interface CSVUploadModalProps {
   isOpen: boolean;

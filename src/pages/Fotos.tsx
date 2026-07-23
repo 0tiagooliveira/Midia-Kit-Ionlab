@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Search, X, Filter, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
-import PhotoCard, { FotoProduct } from '../components/PhotoCard';
+import PhotoCard from '../components/PhotoCard';
 import { useAdminSession } from '../hooks/useAdminSession';
 import { db } from '../firebase';
 import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import AdminModal from '../components/admin/AdminModal';
 import CSVUploadModal from '../components/admin/CSVUploadModal';
 import ProgressToast from '../components/ProgressToast';
 import { Plus, Upload as UploadIcon } from 'lucide-react';
+import type { FotoProduct } from '../lib/fotos';
 
 const PRODUCTS_CACHE_KEY = 'fotos-products-cache-v1';
 const INITIAL_RENDER_LIMIT = 120;
